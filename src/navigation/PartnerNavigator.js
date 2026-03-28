@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DashboardScreen from '../partner_app/screens/DashboardScreen';
 import BookOverviewScreen from '../partner_app/screens/BookOverviewScreen';
 import BookingRequestDetailScreen from '../partner_app/screens/BookingRequestDetailScreen';
@@ -13,6 +14,7 @@ import WithdrawalScreen from '../partner_app/screens/WithdrawalScreen';
 import WithdrawalSuccessScreen from '../partner_app/screens/WithdrawalSuccessScreen';
 import ProfileScreen from '../partner_app/screens/ProfileScreen';
 import ProfessionalProfileScreen from '../partner_app/screens/ProfessionalProfileScreen';
+import { P } from '../theme/partnerTokens';
 
 const Tab = createBottomTabNavigator();
 const BookStack = createNativeStackNavigator();
@@ -52,8 +54,37 @@ function EarningsNavigator() {
 }
 
 export default function PartnerNavigator() {
+  const iconByRoute = {
+    Dashboard: 'home',
+    Book: 'event-note',
+    Earnings: 'account-balance-wallet',
+    Profile: 'account-circle',
+  };
+
   return (
-    <Tab.Navigator>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: P.secondary,
+        tabBarInactiveTintColor: P.outline,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginBottom: 2 },
+        tabBarStyle: {
+          height: 64,
+          paddingTop: 6,
+          paddingBottom: 8,
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          borderTopColor: P.surfaceContainerHigh,
+        },
+        tabBarIcon: ({ color, focused, size }) => (
+          <MaterialIcons
+            name={iconByRoute[route.name] || 'circle'}
+            size={focused ? size + 1 : size}
+            color={color}
+            style={focused ? { transform: [{ translateY: -1 }] } : undefined}
+          />
+        ),
+      })}
+    >
       <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Home', headerShown: false }} />
       <Tab.Screen name="Book" component={BookNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Earnings" component={EarningsNavigator} options={{ headerShown: false }} />

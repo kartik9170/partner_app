@@ -123,7 +123,7 @@ export default function PerformanceScreen({ route, navigation }) {
             <Text style={styles.smallStatLabel}>Bookings</Text>
           </View>
           <View style={[styles.smallStatCard, styles.smallStatGreen]}>
-            <MaterialIcons name="group-add" size={24} color="#1c4f3e" />
+            <MaterialIcons name="group-add" size={24} color="#366855" />
             <Text style={[styles.smallStatValue, styles.smallStatValueGreen]}>{current.retention}</Text>
             <Text style={[styles.smallStatLabel, styles.smallStatLabelGreen]}>Retention</Text>
           </View>
@@ -162,7 +162,7 @@ export default function PerformanceScreen({ route, navigation }) {
               </View>
               <View style={styles.starsRow}>
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <MaterialIcons key={`${review.id}-${star}`} name="star" size={14} color={star <= review.rating ? '#366855' : '#d9e5e3'} />
+                  <MaterialIcons key={`${review.id}-${star}`} name="star" size={14} color={star <= review.rating ? '#366855' : '#DADADA'} />
                 ))}
               </View>
             </View>
@@ -187,33 +187,33 @@ export default function PerformanceScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f0fcfa' },
+  safeArea: { flex: 1, backgroundColor: '#EDE0D4' },
   topBar: {
     height: 64,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#e4f0ee',
+    backgroundColor: '#F5F5F5',
   },
   topLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  avatarWrap: { width: 32, height: 32, borderRadius: 16, overflow: 'hidden', backgroundColor: '#d9e5e3' },
+  avatarWrap: { width: 32, height: 32, borderRadius: 16, overflow: 'hidden', backgroundColor: '#DADADA' },
   avatar: { width: '100%', height: '100%' },
-  brand: { color: '#313c3b', fontSize: fontScale(24), fontWeight: '900', letterSpacing: -0.7 },
+  brand: { color: '#1E1E1E', fontSize: fontScale(24), fontWeight: '900', letterSpacing: -0.7 },
   notificationBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 24 },
   contentWithPreviewNav: { paddingBottom: 126 },
   heroSection: { marginBottom: 18, alignItems: 'center' },
-  heroLabel: { color: '#5f6b66', fontSize: fontScale(10), fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
+  heroLabel: { color: '#6B6B6B', fontSize: fontScale(10), fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
   heroScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  heroScore: { color: '#313c3b', fontSize: fontScale(74), fontWeight: '900', lineHeight: fontScale(80) },
+  heroScore: { color: '#1E1E1E', fontSize: fontScale(74), fontWeight: '900', lineHeight: fontScale(80) },
   lineRatingRow: { marginTop: 8, flexDirection: 'row', gap: 6 },
   lineBar: { width: 42, height: 4, borderRadius: 999 },
   lineBarActive: { backgroundColor: '#366855' },
-  lineBarMuted: { backgroundColor: '#d9e5e3' },
-  heroSub: { marginTop: 10, color: '#5f6b66', fontSize: fontScale(12), textAlign: 'center' },
+  lineBarMuted: { backgroundColor: '#DADADA' },
+  heroSub: { marginTop: 10, color: '#6B6B6B', fontSize: fontScale(12), textAlign: 'center' },
   sectionHead: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 10 },
-  sectionTitle: { color: '#313c3b', fontSize: fontScale(28), fontWeight: '800' },
+  sectionTitle: { color: '#1E1E1E', fontSize: fontScale(28), fontWeight: '800' },
   sectionSub: { color: '#366855', fontSize: fontScale(11), fontWeight: '700', letterSpacing: 1.2 },
   monthRow: { gap: 8, paddingBottom: 8 },
   monthChip: {
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   monthChipActive: { backgroundColor: '#366855', borderColor: '#366855' },
-  monthChipText: { color: '#5f6b66', fontSize: fontScale(11), fontWeight: '700' },
+  monthChipText: { color: '#6B6B6B', fontSize: fontScale(11), fontWeight: '700' },
   monthChipTextActive: { color: '#FFFFFF' },
   statsCard: {
     borderRadius: 26,
@@ -241,30 +241,30 @@ const styles = StyleSheet.create({
   growthChipText: { color: '#FFFFFF', fontSize: fontScale(10), fontWeight: '700' },
   gridRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   smallStatCard: { flex: 1, borderRadius: 22, minHeight: 138, padding: 16, justifyContent: 'space-between' },
-  smallStatSurface: { backgroundColor: '#eaf6f4' },
-  smallStatGreen: { backgroundColor: '#b6ebd3' },
-  smallStatValue: { color: '#131e1c', fontSize: fontScale(34), fontWeight: '800' },
-  smallStatValueGreen: { color: '#1c4f3e' },
-  smallStatLabel: { color: '#5f6b66', fontSize: fontScale(11), fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.1 },
-  smallStatLabelGreen: { color: '#1c4f3e' },
+  smallStatSurface: { backgroundColor: '#F5F5F5' },
+  smallStatGreen: { backgroundColor: '#9dd2bb' },
+  smallStatValue: { color: '#1E1E1E', fontSize: fontScale(34), fontWeight: '800' },
+  smallStatValueGreen: { color: '#366855' },
+  smallStatLabel: { color: '#6B6B6B', fontSize: fontScale(11), fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.1 },
+  smallStatLabelGreen: { color: '#366855' },
   chartCard: { borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(192,201,195,0.35)', padding: 14, marginBottom: 12 },
-  chartTitle: { color: '#313c3b', fontSize: fontScale(15), fontWeight: '700', marginBottom: 8 },
+  chartTitle: { color: '#1E1E1E', fontSize: fontScale(15), fontWeight: '700', marginBottom: 8 },
   chartRow: { height: 124, flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
   chartCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
-  chartBar: { width: '100%', borderTopLeftRadius: 10, borderTopRightRadius: 10, backgroundColor: '#d9e5e3' },
-  chartBarActive: { backgroundColor: '#b6ebd3' },
-  chartLabel: { color: '#707974', fontSize: fontScale(10), fontWeight: '700' },
+  chartBar: { width: '100%', borderTopLeftRadius: 10, borderTopRightRadius: 10, backgroundColor: '#DADADA' },
+  chartBarActive: { backgroundColor: '#9dd2bb' },
+  chartLabel: { color: '#9E9E9E', fontSize: fontScale(10), fontWeight: '700' },
   chartLabelActive: { color: '#366855' },
   reviewHead: { marginTop: 6, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  reviewTitle: { color: '#313c3b', fontSize: fontScale(28), fontWeight: '800' },
+  reviewTitle: { color: '#1E1E1E', fontSize: fontScale(28), fontWeight: '800' },
   reviewAction: { color: '#366855', fontSize: fontScale(13), fontWeight: '700' },
   reviewCard: { borderRadius: 22, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10 },
   reviewTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
   clientRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  clientAvatarWrap: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', backgroundColor: '#d9e5e3' },
+  clientAvatarWrap: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', backgroundColor: '#DADADA' },
   clientAvatar: { width: '100%', height: '100%' },
-  clientName: { color: '#131e1c', fontSize: fontScale(14), fontWeight: '700' },
-  clientMeta: { color: '#5f6b66', fontSize: fontScale(10), marginTop: 1 },
+  clientName: { color: '#1E1E1E', fontSize: fontScale(14), fontWeight: '700' },
+  clientMeta: { color: '#6B6B6B', fontSize: fontScale(10), marginTop: 1 },
   starsRow: { flexDirection: 'row' },
   reviewText: { color: '#4f5a56', fontSize: fontScale(13), lineHeight: 20 },
 });

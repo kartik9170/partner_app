@@ -1,9 +1,13 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { PARTNER } from '../components/BookiAuthChrome';
 import SplashScreen from '../screens/Auth/SplashScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
-import SignupScreen from '../screens/Auth/SignupScreen';
+import PartnerPasswordLoginScreen from '../screens/Auth/PartnerPasswordLoginScreen';
+import PartnerOtpVerifyScreen from '../screens/Auth/PartnerOtpVerifyScreen';
 import PartnerProfileSetupScreen from '../partner_app/screens/PartnerProfileSetupScreen';
+import PartnerRegistrationStep2Screen from '../partner_app/screens/PartnerRegistrationStep2Screen';
+import PartnerRegistrationStep3Screen from '../partner_app/screens/PartnerRegistrationStep3Screen';
 import PartnerVerificationScreen from '../partner_app/screens/PartnerVerificationScreen';
 import PartnerSupportDetailsScreen from '../partner_app/screens/PartnerSupportDetailsScreen';
 import DashboardScreen from '../partner_app/screens/DashboardScreen';
@@ -22,11 +26,20 @@ const Stack = createNativeStackNavigator();
 
 export default function AuthNavigator() {
   return (
-    <Stack.Navigator initialRouteName="Splash">
-      <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login' }} />
-      <Stack.Screen name="Signup" component={SignupScreen} options={{ title: 'Signup' }} />
+    <Stack.Navigator
+      initialRouteName="Splash"
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { flex: 1, backgroundColor: PARTNER.bg },
+      }}
+    >
+      <Stack.Screen name="Splash" component={SplashScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="PartnerPasswordLogin" component={PartnerPasswordLoginScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="PartnerOtpVerify" component={PartnerOtpVerifyScreen} options={{ headerShown: false }} />
       <Stack.Screen name="PartnerProfileSetup" component={PartnerProfileSetupScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="PartnerRegisterStep2" component={PartnerRegistrationStep2Screen} options={{ headerShown: false }} />
+      <Stack.Screen name="PartnerRegisterStep3" component={PartnerRegistrationStep3Screen} options={{ headerShown: false }} />
       <Stack.Screen name="PartnerVerification" component={PartnerVerificationScreen} options={{ headerShown: false }} />
       <Stack.Screen name="PartnerSupportDetails" component={PartnerSupportDetailsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="PartnerHomePreview" component={DashboardScreen} options={{ title: 'Partner Home', headerShown: false }} />

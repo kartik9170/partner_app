@@ -3,6 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import useBooking from '../../hooks/useBooking';
+import { P } from '../../theme/partnerTokens';
 import { fontScale } from '../../utils/responsive';
 import PartnerBottomNav from '../../components/PartnerBottomNav';
 
@@ -64,13 +65,13 @@ export default function DashboardScreen({ route, navigation }) {
           <View style={styles.scheduleGrid}>
             <View style={styles.scheduleCard}>
               <View style={styles.scheduleIconWrap}>
-                <MaterialIcons name="schedule" size={20} color="#366855" />
+                <MaterialIcons name="schedule" size={20} color={P.secondary} />
               </View>
               <Text style={styles.scheduleText}>Next in{'\n'}45 mins</Text>
             </View>
             <View style={[styles.scheduleCard, styles.scheduleCardDone]}>
               <View style={[styles.scheduleIconWrap, styles.scheduleIconDone]}>
-                <MaterialIcons name="check-circle" size={20} color="#366855" />
+                <MaterialIcons name="check-circle" size={20} color={P.secondary} />
               </View>
               <Text style={styles.scheduleDoneText}>{completed} Completed</Text>
             </View>
@@ -83,7 +84,7 @@ export default function DashboardScreen({ route, navigation }) {
             <View style={styles.bookingTop}>
               <View style={styles.bookingPersonRow}>
                 <View style={styles.personIconWrap}>
-                  <MaterialIcons name="person" size={20} color="#5f6b66" />
+                  <MaterialIcons name="person" size={20} color={P.onSurfaceVariant} />
                 </View>
                 <View>
                   <Text style={styles.personName}>Priya Sharma</Text>
@@ -97,11 +98,11 @@ export default function DashboardScreen({ route, navigation }) {
 
             <View style={styles.bookingActions}>
               <Pressable style={({ pressed }) => [styles.startBtn, pressed && styles.pressed]}>
-                <MaterialIcons name="play-circle" size={20} color="#FFFFFF" />
+                <MaterialIcons name="play-circle" size={20} color={P.onPrimary} />
                 <Text style={styles.startBtnText}>Start Session</Text>
               </Pressable>
               <Pressable style={({ pressed }) => [styles.moreBtn, pressed && styles.pressed]}>
-                <MaterialIcons name="more-horiz" size={20} color="#5f6b66" />
+                <MaterialIcons name="more-horiz" size={20} color={P.onSurfaceVariant} />
               </Pressable>
             </View>
           </View>
@@ -123,7 +124,7 @@ export default function DashboardScreen({ route, navigation }) {
                   </Text>
                 </View>
               </View>
-              <MaterialIcons name="chevron-right" size={18} color="#9aa6a1" />
+              <MaterialIcons name="chevron-right" size={18} color={P.outlineVariant} />
             </View>
           ))}
         </View>
@@ -144,12 +145,12 @@ export default function DashboardScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f0fcfa' },
+  safeArea: { flex: 1, backgroundColor: P.surface },
   topBar: {
     height: 58,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderColor: '#e4f0ee',
+    borderColor: P.surfaceContainer,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -161,12 +162,12 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#deebe8',
+    backgroundColor: P.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: 'rgba(182,235,211,0.7)',
+    borderColor: 'rgba(182,235,211,0.5)',
   },
   avatar: { width: '100%', height: '100%' },
-  brand: { color: '#313c3b', fontWeight: '800', fontSize: fontScale(18) },
+  brand: { color: P.primary, fontWeight: '800', fontSize: fontScale(18) },
   onlineBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -174,19 +175,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: 'rgba(182,235,211,0.35)',
+    backgroundColor: 'rgba(182,235,211,0.3)',
   },
-  onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#366855' },
-  onlineText: { color: '#366855', fontSize: fontScale(10), fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 },
+  onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P.secondary },
+  onlineText: { color: P.secondary, fontSize: fontScale(10), fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 },
   content: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 24 },
   contentWithBottomNav: { paddingBottom: 96 },
   revenueCard: {
     borderRadius: 24,
     padding: 18,
-    backgroundColor: '#313c3b',
+    backgroundColor: P.primary,
     marginBottom: 18,
     overflow: 'hidden',
-    shadowColor: '#313c3b',
+    shadowColor: P.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.18,
     shadowRadius: 20,
@@ -202,34 +203,49 @@ const styles = StyleSheet.create({
   decorCircle: { position: 'absolute', right: -24, bottom: -24, width: 96, height: 96, borderRadius: 48, backgroundColor: 'rgba(255,255,255,0.06)' },
   section: { marginBottom: 18 },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 },
-  sectionTitle: { color: '#313c3b', fontSize: fontScale(20), fontWeight: '700' },
-  sectionPill: { backgroundColor: '#e4f0ee', color: '#5f6b66', fontSize: fontScale(10), fontWeight: '700', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  sectionTitle: { color: P.primary, fontSize: fontScale(20), fontWeight: '700' },
+  sectionPill: {
+    backgroundColor: P.surfaceContainer,
+    color: P.onSurfaceVariant,
+    fontSize: fontScale(10),
+    fontWeight: '700',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
   scheduleGrid: { flexDirection: 'row', gap: 10 },
-  scheduleCard: { flex: 1, borderRadius: 16, padding: 14, minHeight: 132, justifyContent: 'space-between', backgroundColor: '#eaf6f4' },
+  scheduleCard: { flex: 1, borderRadius: 16, padding: 14, minHeight: 132, justifyContent: 'space-between', backgroundColor: P.surfaceContainerLow },
   scheduleCardDone: { backgroundColor: 'rgba(182,235,211,0.5)' },
   scheduleIconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(54,104,85,0.1)' },
   scheduleIconDone: { backgroundColor: 'rgba(54,104,85,0.18)' },
-  scheduleText: { color: '#273331', fontSize: fontScale(15), fontWeight: '700', lineHeight: 19 },
-  scheduleDoneText: { color: '#366855', fontSize: fontScale(15), fontWeight: '700' },
-  bookingCard: { borderRadius: 22, backgroundColor: '#FFFFFF', padding: 14, borderWidth: 1, borderColor: '#deebe8' },
+  scheduleText: { color: P.onSurface, fontSize: fontScale(15), fontWeight: '700', lineHeight: 19 },
+  scheduleDoneText: { color: P.secondary, fontSize: fontScale(15), fontWeight: '700' },
+  bookingCard: { borderRadius: 22, backgroundColor: P.surfaceContainerLowest, padding: 14, borderWidth: 1, borderColor: P.surfaceContainerHigh },
   bookingTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
   bookingPersonRow: { flexDirection: 'row', gap: 10 },
-  personIconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#d9e5e3', alignItems: 'center', justifyContent: 'center' },
-  personName: { color: '#273331', fontSize: fontScale(16), fontWeight: '700' },
-  personService: { color: '#5f6b66', fontSize: fontScale(12) },
-  timeBadge: { borderRadius: 10, backgroundColor: '#eaf6f4', borderWidth: 1, borderColor: '#deebe8', paddingHorizontal: 10, paddingVertical: 7 },
-  timeBadgeText: { color: '#313c3b', fontSize: fontScale(12), fontWeight: '700' },
+  personIconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: P.surfaceContainerHighest, alignItems: 'center', justifyContent: 'center' },
+  personName: { color: P.onSurface, fontSize: fontScale(16), fontWeight: '700' },
+  personService: { color: P.onSurfaceVariant, fontSize: fontScale(12) },
+  timeBadge: {
+    borderRadius: 10,
+    backgroundColor: P.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: P.surfaceContainerHigh,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  timeBadgeText: { color: P.primary, fontSize: fontScale(12), fontWeight: '700' },
   bookingActions: { flexDirection: 'row', gap: 8 },
-  startBtn: { flex: 1, minHeight: 54, borderRadius: 16, backgroundColor: '#366855', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  startBtnText: { color: '#FFFFFF', fontSize: fontScale(15), fontWeight: '700' },
-  moreBtn: { width: 54, height: 54, borderRadius: 16, backgroundColor: '#eaf6f4', alignItems: 'center', justifyContent: 'center' },
+  startBtn: { flex: 1, minHeight: 54, borderRadius: 16, backgroundColor: P.secondary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  startBtnText: { color: P.onSecondary, fontSize: fontScale(15), fontWeight: '700' },
+  moreBtn: { width: 54, height: 54, borderRadius: 16, backgroundColor: P.surfaceContainerLow, alignItems: 'center', justifyContent: 'center' },
   pressed: { transform: [{ scale: 0.97 }] },
-  viewAll: { color: '#366855', fontSize: fontScale(11), fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.1 },
+  viewAll: { color: P.secondary, fontSize: fontScale(11), fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.1 },
   laterRow: {
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(192,201,195,0.45)',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: P.surfaceContainerLowest,
     paddingHorizontal: 12,
     paddingVertical: 12,
     marginBottom: 8,
@@ -239,7 +255,15 @@ const styles = StyleSheet.create({
   },
   laterRowMuted: { opacity: 0.62 },
   laterLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  timePill: { color: '#5f6b66', fontSize: fontScale(11), fontWeight: '800', backgroundColor: '#e4f0ee', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5 },
-  laterName: { color: '#273331', fontSize: fontScale(14), fontWeight: '700' },
-  laterService: { color: '#6b7772', fontSize: fontScale(11) },
+  timePill: {
+    color: P.onSurfaceVariant,
+    fontSize: fontScale(11),
+    fontWeight: '800',
+    backgroundColor: P.surfaceContainer,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  laterName: { color: P.onSurface, fontSize: fontScale(14), fontWeight: '700' },
+  laterService: { color: P.outline, fontSize: fontScale(11) },
 });

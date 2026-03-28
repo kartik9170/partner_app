@@ -12,9 +12,21 @@ export default function LiveTrackingScreen({ navigation, route }) {
   const booking = useMemo(() => bookings.find((item) => item.id === bookingId), [bookings, bookingId]);
   const serviceName = booking?.service?.name || 'Classic Manicure & Pedicure';
   const orderCode = booking?.id ? booking.id.slice(-6).toUpperCase() : 'AB-9241';
+  const liveLocation = booking?.liveLocation;
+  const locationText = liveLocation?.place
+    || (liveLocation?.latitude
+      ? `${liveLocation.latitude?.toFixed?.(5)}, ${liveLocation.longitude?.toFixed?.(5)}`
+      : 'Partner has not started live location yet.');
 
   const callArtisan = async () => {
     const url = 'tel:+919999999999';
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) Linking.openURL(url);
+  };
+
+  const openLiveLocation = async () => {
+    if (!liveLocation?.latitude || !liveLocation?.longitude) return;
+    const url = `https://www.google.com/maps/search/?api=1&query=${liveLocation.latitude},${liveLocation.longitude}`;
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) Linking.openURL(url);
   };
@@ -43,6 +55,28 @@ export default function LiveTrackingScreen({ navigation, route }) {
               <MaterialIcons name="directions-car" size={16} color="#FFFFFF" />
             </View>
           </View>
+          <View style={styles.liveBadge}>
+            <MaterialIcons name={liveLocation?.latitude ? 'gps-fixed' : 'gps-not-fixed'} size={14} color="#ffffff" />
+            <Text style={styles.liveBadgeText}>{liveLocation?.latitude ? 'LIVE' : 'OFFLINE'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.locationCard}>
+          <Text style={styles.locationLabel}>Partner Live Location</Text>
+          <Text style={styles.locationValue}>{locationText}</Text>
+          <Text style={styles.locationUpdated}>
+            {liveLocation?.updatedAt
+              ? `Updated: ${new Date(liveLocation.updatedAt).toLocaleTimeString()}`
+              : 'Waiting for partner to start tracking'}
+          </Text>
+          <Pressable
+            onPress={openLiveLocation}
+            disabled={!liveLocation?.latitude}
+            style={[styles.openMapBtn, !liveLocation?.latitude && styles.openMapBtnDisabled]}
+          >
+            <MaterialIcons name="location-on" size={16} color="#fff" />
+            <Text style={styles.openMapText}>Open in Maps</Text>
+          </Pressable>
         </View>
 
         <View style={styles.timelineCard}>
@@ -50,8 +84,8 @@ export default function LiveTrackingScreen({ navigation, route }) {
           {[
             ['check-circle', 'Finding your Artisan', 'Completed at 10:45 AM', true],
             ['check-circle', 'Artisan Assigned', 'Lucille V. is ready to assist', true],
-            ['radio-button-checked', 'On the Way', 'Estimated arrival in 8 mins', false],
-            ['panorama-fish-eye', 'Arrived', 'Expected arrival: 11:15 AM', false],
+            ['radio-button-checked', 'On the Way', liveLocation?.latitude ? `Live: ${locationText}` : 'Waiting for live location', false],
+            ['panorama-fish-eye', 'Arrived', liveLocation?.trackingStoppedAt ? 'Partner marked service location reached' : 'Expected arrival: --', false],
           ].map(([icon, label, meta, completed], index) => (
             <View key={label} style={styles.timelineRow}>
               <MaterialIcons name={icon} size={20} color={completed || index === 2 ? '#366855' : '#9aa6a1'} />
@@ -110,6 +144,42 @@ const styles = StyleSheet.create({
   mapOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(240,252,250,0.2)' },
   centerPin: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   pinCircle: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#366855' },
+  liveBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    borderRadius: 999,
+    backgroundColor: '#366855',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  liveBadgeText: { color: '#fff', fontSize: fontScale(10), fontWeight: '800', letterSpacing: 1 },
+  locationCard: {
+    marginTop: 12,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(192,201,195,0.35)',
+    padding: 12,
+  },
+  locationLabel: { color: '#366855', fontSize: fontScale(11), fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  locationValue: { color: '#313c3b', fontSize: fontScale(13), fontWeight: '600', marginTop: 4 },
+  locationUpdated: { color: '#5f6b66', fontSize: fontScale(11), marginTop: 4 },
+  openMapBtn: {
+    marginTop: 10,
+    minHeight: 40,
+    borderRadius: 10,
+    backgroundColor: '#366855',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  openMapBtnDisabled: { opacity: 0.45 },
+  openMapText: { color: '#fff', fontSize: fontScale(12), fontWeight: '700' },
   timelineCard: { marginTop: 12, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(192,201,195,0.35)', padding: 12 },
   timelineTitle: { color: '#313c3b', fontSize: fontScale(17), fontWeight: '700', marginBottom: 8 },
   timelineRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 9 },

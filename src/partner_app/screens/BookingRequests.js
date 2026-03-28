@@ -22,8 +22,8 @@ export default function BookingRequests() {
             <Text>{item.date} | {item.time}</Text>
             <Text>{item.address}</Text>
             <View style={styles.row}>
-              <Button title="Accept" style={styles.btn} onPress={() => updateBooking(item.id, { status: BOOKING_STATUS.ACCEPTED })} />
-              <Button title="Reject" variant="secondary" style={styles.btn} onPress={() => updateBooking(item.id, { status: BOOKING_STATUS.REJECTED })} />
+              <Button title="Accept" palette="partner" style={styles.btn} onPress={() => updateBooking(item.id, { status: BOOKING_STATUS.ACCEPTED })} />
+              <Button title="Reject" variant="secondary" palette="partner" style={styles.btn} onPress={() => updateBooking(item.id, { status: BOOKING_STATUS.REJECTED })} />
             </View>
           </Card>
         )}

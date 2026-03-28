@@ -107,7 +107,7 @@ export default function ProfessionalProfileScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f0fcfa' },
+  safeArea: { flex: 1, backgroundColor: '#EDE0D4' },
   header: {
     height: 62,
     paddingHorizontal: 14,
@@ -119,11 +119,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(240,252,250,0.94)',
   },
   iconButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#313c3b', fontSize: fontScale(18), fontWeight: '800' },
+  headerTitle: { color: '#1E1E1E', fontSize: fontScale(18), fontWeight: '800' },
   content: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 20 },
   heroCard: {
     borderRadius: 22,
-    backgroundColor: '#313c3b',
+    backgroundColor: '#1E1E1E',
     alignItems: 'center',
     padding: 20,
     marginBottom: 12,
@@ -150,17 +150,17 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
   },
-  cardTitle: { color: '#313c3b', fontSize: fontScale(16), fontWeight: '800', marginBottom: 8 },
+  cardTitle: { color: '#1E1E1E', fontSize: fontScale(16), fontWeight: '800', marginBottom: 8 },
   aboutText: { color: '#4f5a56', fontSize: fontScale(13), lineHeight: 20 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 10 },
-  infoLabel: { color: '#5f6b66', fontSize: fontScale(12), fontWeight: '600' },
+  infoLabel: { color: '#6B6B6B', fontSize: fontScale(12), fontWeight: '600' },
   infoValue: { color: '#273331', fontSize: fontScale(12), fontWeight: '700', flex: 1, textAlign: 'right' },
   tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tag: { borderRadius: 999, backgroundColor: '#e4f0ee', paddingHorizontal: 10, paddingVertical: 6 },
+  tag: { borderRadius: 999, backgroundColor: '#F5F5F5', paddingHorizontal: 10, paddingVertical: 6 },
   tagText: { color: '#366855', fontSize: fontScale(11), fontWeight: '700' },
   linkRow: {
     borderRadius: 14,
-    backgroundColor: '#eaf6f4',
+    backgroundColor: '#F5F5F5',
     borderWidth: 1,
     borderColor: 'rgba(182,235,211,0.8)',
     flexDirection: 'row',
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   },
   linkLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   linkIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(182,235,211,0.45)', alignItems: 'center', justifyContent: 'center' },
-  linkTitle: { color: '#313c3b', fontSize: fontScale(14), fontWeight: '700' },
-  linkSub: { color: '#5f6b66', fontSize: fontScale(11), marginTop: 1 },
+  linkTitle: { color: '#1E1E1E', fontSize: fontScale(14), fontWeight: '700' },
+  linkSub: { color: '#6B6B6B', fontSize: fontScale(11), marginTop: 1 },
   pressed: { transform: [{ scale: 0.985 }] },
 });

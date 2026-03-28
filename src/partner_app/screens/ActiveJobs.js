@@ -21,7 +21,7 @@ export default function ActiveJobs() {
             <Text style={styles.name}>{item.service?.name}</Text>
             <Text>{item.date} | {item.time}</Text>
             <Text>Status: {item.status}</Text>
-            <Button title="Mark as Completed" onPress={() => updateBooking(item.id, { status: BOOKING_STATUS.COMPLETED })} />
+            <Button title="Mark as Completed" palette="partner" onPress={() => updateBooking(item.id, { status: BOOKING_STATUS.COMPLETED })} />
           </Card>
         )}
       />

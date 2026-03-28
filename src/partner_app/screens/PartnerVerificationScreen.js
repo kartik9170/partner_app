@@ -127,7 +127,7 @@ export default function PartnerVerificationScreen({ navigation }) {
           </View>
 
           <View style={styles.infoBoxRight}>
-            <MaterialIcons name="verified-user" size={22} color="#a6f2d4" />
+            <MaterialIcons name="verified-user" size={22} color="#9dd2bb" />
             <View>
               <Text style={styles.infoLabelRight}>SECURITY</Text>
               <Text style={styles.infoValueRight}>AES-256</Text>
@@ -162,7 +162,7 @@ export default function PartnerVerificationScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f0fcfa' },
+  safeArea: { flex: 1, backgroundColor: '#EDE0D4' },
   topBar: {
     height: 64,
     paddingHorizontal: 16,
@@ -174,14 +174,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(192,201,195,0.2)',
   },
   topLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  brand: { fontSize: fontScale(18), color: '#313c3b', fontWeight: '900', fontStyle: 'italic' },
+  brand: { fontSize: fontScale(18), color: '#1E1E1E', fontWeight: '900', fontStyle: 'italic' },
   avatarWrap: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#b6ebd3',
+    backgroundColor: '#9dd2bb',
     borderWidth: 2,
-    borderColor: '#e4f0ee',
+    borderColor: '#F5F5F5',
     overflow: 'hidden',
   },
   avatar: { width: '100%', height: '100%' },
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     marginBottom: 10,
   },
-  heroTitle: { fontSize: fontScale(36), lineHeight: 42, color: '#313c3b', fontWeight: '800', marginBottom: 8 },
+  heroTitle: { fontSize: fontScale(36), lineHeight: 42, color: '#1E1E1E', fontWeight: '800', marginBottom: 8 },
   heroSub: { color: '#4f5a56', fontSize: fontScale(14), lineHeight: 21, maxWidth: '90%' },
   mainCard: {
     borderRadius: 14,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 2,
     borderColor: '#366855',
-    shadowColor: '#131e1c',
+    shadowColor: '#1E1E1E',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.07,
     shadowRadius: 20,
@@ -217,15 +217,15 @@ const styles = StyleSheet.create({
   mainHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
   phaseLabel: { color: '#7f8a86', fontSize: fontScale(10), fontWeight: '700', letterSpacing: 1.2, marginBottom: 4 },
   phaseTitle: { color: '#366855', fontSize: fontScale(22), fontWeight: '700' },
-  phaseIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#a6f2d4', alignItems: 'center', justifyContent: 'center' },
+  phaseIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#9dd2bb', alignItems: 'center', justifyContent: 'center' },
   timelineWrap: { gap: 2 },
   timelineRow: { flexDirection: 'row', gap: 10 },
   timelinePendingRow: { opacity: 0.45 },
   dotCol: { alignItems: 'center' },
-  dot: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#e4f0ee' },
+  dot: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F5F5' },
   dotDone: { backgroundColor: '#366855' },
   dotActive: { borderWidth: 2, borderColor: '#366855', backgroundColor: '#FFFFFF' },
-  dotPending: { backgroundColor: '#deebe8' },
+  dotPending: { backgroundColor: '#F5F5F5' },
   dotActiveInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#366855' },
   line: { width: 2, height: 36, backgroundColor: 'rgba(192,201,195,0.4)' },
   lineDone: { backgroundColor: 'rgba(54,104,85,0.25)' },
@@ -234,13 +234,13 @@ const styles = StyleSheet.create({
   timelineText: { paddingBottom: 10 },
   timelineTitle: { color: '#273331', fontSize: fontScale(15), fontWeight: '700', marginBottom: 2 },
   timelineTitleActive: { color: '#366855' },
-  timelineSub: { color: '#5f6b66', fontSize: fontScale(12) },
+  timelineSub: { color: '#6B6B6B', fontSize: fontScale(12) },
   infoGrid: { flexDirection: 'row', gap: 10, marginTop: 14 },
   infoBoxLeft: {
     flex: 1,
     minHeight: 110,
     borderRadius: 12,
-    backgroundColor: '#e4f0ee',
+    backgroundColor: '#F5F5F5',
     padding: 14,
     justifyContent: 'space-between',
   },
@@ -248,14 +248,14 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 110,
     borderRadius: 12,
-    backgroundColor: '#025d47',
+    backgroundColor: '#2C2C2C',
     padding: 14,
     justifyContent: 'space-between',
   },
   infoLabel: { color: '#3f5550', fontSize: fontScale(10), fontWeight: '700', letterSpacing: 1.1 },
-  infoValue: { color: '#313c3b', fontSize: fontScale(24), fontWeight: '700' },
+  infoValue: { color: '#1E1E1E', fontSize: fontScale(24), fontWeight: '700' },
   infoLabelRight: { color: 'rgba(240,252,250,0.82)', fontSize: fontScale(10), fontWeight: '700', letterSpacing: 1.1 },
-  infoValueRight: { color: '#a6f2d4', fontSize: fontScale(24), fontWeight: '700' },
+  infoValueRight: { color: '#9dd2bb', fontSize: fontScale(24), fontWeight: '700' },
   footerCard: {
     marginTop: 16,
     borderRadius: 12,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
-  footerTitle: { color: '#313c3b', fontSize: fontScale(18), fontWeight: '700', marginBottom: 3 },
+  footerTitle: { color: '#1E1E1E', fontSize: fontScale(18), fontWeight: '700', marginBottom: 3 },
   footerSub: { color: '#4f5a56', fontSize: fontScale(13), textAlign: 'center', marginBottom: 12 },
   editButton: {
     width: '100%',
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   supportText: {
     textAlign: 'center',
     marginTop: 16,
-    color: '#1c4f3e',
+    color: '#366855',
     fontWeight: '700',
     textDecorationLine: 'underline',
     textDecorationColor: 'rgba(54,104,85,0.35)',

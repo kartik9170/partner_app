@@ -1,354 +1,457 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Alert,
-  ImageBackground,
+  Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
   useWindowDimensions,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import useAuth from '../../hooks/useAuth';
-import { resendLoginOtp, sendLoginOtp } from '../../services/authService';
-import { clamp, fontScale, moderateScale } from '../../utils/responsive';
+import { LinearGradient } from 'expo-linear-gradient';
+import { sendLoginOtp } from '../../services/authService';
+
+const DIAL_CODES = ['+91', '+1', '+44', '+971'];
+
+const C = {
+  surface: '#f0fcfa',
+  primary: '#313c3b',
+  secondary: '#366855',
+  onSecondary: '#ffffff',
+  surfaceContainerHigh: '#deebe8',
+  surfaceContainerLow: '#eaf6f4',
+  surfaceContainerLowest: '#ffffff',
+  onSurfaceVariant: '#404944',
+  outline: '#707974',
+  outlineVariant: '#c0c9c3',
+  surfaceVariant: '#d9e5e3',
+  secondaryContainer: '#b6ebd3',
+  tertiaryFixed: '#a6f2d4',
+  gradientEnd: '#025d47',
+};
 
 export default function LoginScreen({ navigation }) {
-  const { loginPartnerOtp, updateUserProfile, loading } = useAuth();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const compact = width < 370;
-  const [countryCode] = useState('+91');
+  const isWide = width >= 768;
+
   const [mobile, setMobile] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '']);
-  const [otpSending, setOtpSending] = useState(false);
-  /** Last mobile we successfully triggered MSG91 for (send or resend). */
-  const [lastOtpMobile, setLastOtpMobile] = useState('');
-  const otpRefs = useRef([]);
+  const [dialCode, setDialCode] = useState('+91');
+  const [ccOpen, setCcOpen] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
 
-  const titleSize = useMemo(() => (compact ? fontScale(30) : fontScale(34)), [compact]);
-  const containerPadding = clamp(width * 0.06, 18, 26);
-  const heroHeight = clamp(width * 0.72, 240, 330);
+  const cleanMobile = mobile.replace(/\D/g, '').slice(0, 10);
 
-  const otpFilledCount = otp.filter((digit) => digit).length;
+  const onClose = () => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate('Splash');
+  };
 
-  const detectCurrentLocation = () =>
-    new Promise((resolve) => {
-      try {
-        if (!navigator?.geolocation?.getCurrentPosition) return resolve(null);
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const latitude = String(position?.coords?.latitude || '');
-            const longitude = String(position?.coords?.longitude || '');
-            let city = '';
-            let area = '';
-            try {
-              const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
-              const response = await fetch(url, { headers: { Accept: 'application/json' } });
-              const data = await response.json();
-              const address = data?.address || {};
-              area = address.suburb || address.neighbourhood || address.city_district || address.road || '';
-              city = address.city || address.town || address.village || address.county || '';
-            } catch {
-              // Keep raw coordinates even when reverse geocoding fails.
-            }
-            resolve({ latitude, longitude, city, area });
-          },
-          () => resolve(null),
-          { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
-        );
-      } catch {
-        resolve(null);
-      }
-    });
-
-  const submit = async () => {
-    if (mobile.trim().length < 10) {
-      return Alert.alert('Invalid Mobile Number', 'Please enter a valid 10 digit mobile number.');
+  const onSendOtp = async () => {
+    if (cleanMobile.length !== 10) {
+      Alert.alert('Invalid number', 'Enter valid 10-digit mobile number.');
+      return;
     }
-
-    if (otp.join('').length < 4) {
-      return Alert.alert('Verification Incomplete', 'Please enter the 4 digit verification code.');
-    }
-
-    const enteredOtp = otp.join('');
+    setSendingOtp(true);
     try {
-      await loginPartnerOtp({ mobile, otp: enteredOtp });
-      const loc = await detectCurrentLocation();
-      if (loc) updateUserProfile({ location: loc });
-    } catch (error) {
-      const msg = error?.message || 'Please try again.';
-      if (msg.toLowerCase().includes('partner account not found')) {
-        if (enteredOtp === '1234') {
-          Alert.alert('Demo OTP verified', 'This number is not registered. Moving to partner registration flow.');
-          navigation.navigate('PartnerProfileSetup', { mobile, otpVerified: true });
-          return;
-        }
-        Alert.alert('Partner not found', 'This mobile is new. Enter demo OTP 1234 to continue to Create Account.');
-        return;
-      }
-      if (msg.toLowerCase().includes('not approved')) {
-        Alert.alert('Approval pending', msg);
-        return;
-      }
-      Alert.alert('Partner sign in failed', msg);
-    }
-  };
-
-  const updateOtpDigit = (index, value) => {
-    const sanitized = value.replace(/[^0-9]/g, '').slice(-1);
-    setOtp((prev) => prev.map((item, idx) => (idx === index ? sanitized : item)));
-    if (sanitized && index < otp.length - 1) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyPress = (index, key) => {
-    if (key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const requestOtp = async () => {
-    if (mobile.trim().length < 10) {
-      return Alert.alert('Invalid Mobile Number', 'Please enter a valid 10 digit mobile number first.');
-    }
-    const isResend = lastOtpMobile === mobile;
-    setOtpSending(true);
-    try {
-      if (isResend) {
-        await resendLoginOtp(mobile);
-      } else {
-        await sendLoginOtp(mobile);
-      }
-      setLastOtpMobile(mobile);
-      if (mobile === '1234567890') {
-        Alert.alert('OTP Sent', 'Testing OTP for 1234567890 is 1234.');
-      } else {
-        Alert.alert('OTP', isResend ? 'A new code has been sent.' : 'Verification code sent to your mobile.');
-      }
+      await sendLoginOtp(cleanMobile);
+      navigation.navigate('PartnerOtpVerify', { mobile: cleanMobile, dialCode });
     } catch (e) {
-      Alert.alert('OTP', e?.message || 'Could not send OTP. Try again.');
+      Alert.alert('OTP error', e?.message || 'Could not send OTP.');
     } finally {
-      setOtpSending(false);
+      setSendingOtp(false);
     }
   };
+
+  const openFooter = (label) => {
+    Alert.alert(label, 'Link opens when your help site URL is configured.');
+  };
+
+  const headerPadTop = Math.max(insets.top, 8);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.select({ ios: 'padding', android: undefined })}>
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          contentContainerStyle={[styles.scrollContainer, { paddingBottom: insets.bottom + 16, paddingTop: 0 }]}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={[styles.heroWrap, { height: heroHeight }]}>
-            <ImageBackground
-              source={{
-                uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuABmaKOVdp60VpzWXL6Tin4jrCxX7JNrh0QX_4TrKEP6dDCWUhmNYsIdLU_WWjuZJ7OSNxaHMs97GkyR8Ntim_hyF4zYiitDe4hLSbiONsES58ahelORi0cNPIONRsu1i9C0EkVa4G-sx1qSEgsRIrh9ITNcuVWZWcbaX5GWA9kjfP3g4FTb1Q1w1ZYVms7XsgiB6G3ZmOQfIZjpdLkrREI61cdcnw9ekGigdyDzbFq-vs1UTXUONdLyWkcW8HIDTCIsfjPrw8PJ18',
-              }}
-              style={styles.heroImage}
-              resizeMode="cover"
-            >
-              <LinearGradient colors={['rgba(49,60,59,0.2)', 'rgba(49,60,59,0.6)', '#f0fcfa']} style={styles.heroOverlay}>
-                <Text style={styles.brand}>Emerald Pro</Text>
-                <Text style={styles.brandSub}>PARTNER ECOSYSTEM</Text>
-              </LinearGradient>
-            </ImageBackground>
-          </View>
-
-          <View style={[styles.formCard, { marginHorizontal: containerPadding, marginTop: -moderateScale(62), padding: containerPadding }]}>
-            <View style={styles.demoOtpBanner}>
-              <Text style={styles.demoOtpText}>Demo OTP: 1234 (for unregistered numbers goes to Register Flow)</Text>
-            </View>
-            <Text style={[styles.heading, { fontSize: titleSize }]}>Welcome back</Text>
-            <Text style={styles.sub}>Enter phone number and OTP to access your partner dashboard.</Text>
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>MOBILE NUMBER</Text>
-              <View style={styles.inputRow}>
-                <Text style={styles.countryCode}>{countryCode}</Text>
-                <TextInput
-                  value={mobile}
-                  onChangeText={(value) => setMobile(value.replace(/[^0-9]/g, '').slice(0, 10))}
-                  placeholder="555 0123"
-                  keyboardType="phone-pad"
-                  style={styles.mobileInput}
-                  placeholderTextColor="#8A9792"
-                  maxLength={10}
-                />
-                <MaterialIcons name="smartphone" size={20} color="#707974" />
-              </View>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${Math.max(20, (mobile.length / 10) * 100)}%` }]} />
-              </View>
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>VERIFICATION CODE</Text>
-                <Pressable
-                  disabled={otpSending || loading}
-                  onPress={requestOtp}
-                  hitSlop={8}
-                >
-                  <Text style={[styles.resendText, (otpSending || loading) && styles.resendDisabled]}>
-                    {otpSending ? 'Sending…' : lastOtpMobile === mobile && mobile.length === 10 ? 'Resend' : 'Send OTP'}
-                  </Text>
-                </Pressable>
-              </View>
-              <View style={styles.otpRow}>
-                {otp.map((digit, index) => (
-                  <TextInput
-                    key={`otp-${index}`}
-                    ref={(ref) => {
-                      otpRefs.current[index] = ref;
-                    }}
-                    value={digit}
-                    onChangeText={(value) => updateOtpDigit(index, value)}
-                    onKeyPress={({ nativeEvent }) => handleOtpKeyPress(index, nativeEvent.key)}
-                    keyboardType="number-pad"
-                    maxLength={1}
-                    style={styles.otpInput}
-                    textAlign="center"
-                  />
-                ))}
-              </View>
-              <Text style={styles.otpHint}>{otpFilledCount}/4 digits entered</Text>
-            </View>
-
-            <Pressable disabled={loading} onPress={submit} style={({ pressed }) => [styles.signInButton, pressed && styles.buttonPressed, loading && styles.buttonDisabled]}>
-              <LinearGradient colors={['#366855', '#025d47']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.signInGradient}>
-                <Text style={styles.signInText}>{loading ? 'Verifying...' : 'Verify OTP & Login'}</Text>
-              </LinearGradient>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.safeTop} edges={['bottom']}>
+        <KeyboardAvoidingView style={styles.flex} behavior={Platform.select({ ios: 'padding', android: undefined })}>
+          {/* Top bar — matches HTML fixed header */}
+          <View style={[styles.topBar, { paddingTop: headerPadTop }]}>
+            <Pressable onPress={onClose} style={styles.iconCircle} hitSlop={12}>
+              <MaterialIcons name="close" size={24} color={C.secondary} />
             </Pressable>
-
-            <View style={styles.footerBlock}>
-              <View style={styles.dividerRow}>
-                <View style={styles.divider} />
-                <Text style={styles.footerLabel}>New to Emerald Pro?</Text>
-                <View style={styles.divider} />
-              </View>
-
-              <Pressable onPress={() => navigation.navigate('PartnerProfileSetup')}>
-                <Text style={styles.applyText}>Join as Partner</Text>
-              </Pressable>
-            </View>
+            <Text style={styles.topBarTitle} numberOfLines={1}>
+              Partner Portal
+            </Text>
+            <View style={styles.topBarSpacer} />
           </View>
 
-          <View style={styles.supportSection}>
-            <View style={styles.supportRow}>
-              <View style={styles.supportItem}>
-                <MaterialIcons name="help-outline" size={16} color="#66726d" />
-                <Text style={styles.supportText}>Help Center</Text>
+          <View style={[styles.mainRow, !isWide && styles.mainCol]}>
+            {/* Left editorial panel — md+ in HTML */}
+            {isWide && (
+              <View style={styles.leftPanel}>
+                <View style={[styles.blob, styles.blobTop]} />
+                <View style={[styles.blob, styles.blobBottom]} />
+                <View style={styles.leftInner}>
+                  <View style={styles.accentRule} />
+                  <Text style={styles.leftHeadline}>
+                    Your craft,{'\n'}
+                    <Text style={styles.leftHeadlineAccent}>elevated.</Text>
+                  </Text>
+                  <Text style={styles.leftBody}>
+                    Join the exclusive circle of beauty and wellness professionals redefining the service experience.
+                  </Text>
+                  <View style={styles.featureGrid}>
+                    <View style={styles.featureCard}>
+                      <MaterialIcons name="insights" size={28} color={C.secondary} style={styles.featureIcon} />
+                      <Text style={styles.featureTitle}>Growth Analytics</Text>
+                    </View>
+                    <View style={styles.featureCard}>
+                      <MaterialIcons name="calendar-today" size={28} color={C.secondary} style={styles.featureIcon} />
+                      <Text style={styles.featureTitle}>Smart Scheduling</Text>
+                    </View>
+                  </View>
+                </View>
               </View>
-              <View style={styles.supportItem}>
-                <MaterialIcons name="language" size={16} color="#66726d" />
-                <Text style={styles.supportText}>Language</Text>
+            )}
+
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={[styles.scrollContent, isWide && styles.scrollContentWide]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.formColumn}>
+                <View style={styles.brandRow}>
+                  <MaterialIcons name="spa" size={26} color={C.secondary} />
+                  <Text style={styles.brandTag}>ATELIER PARTNER</Text>
+                </View>
+                <Text style={styles.panelTitle}>Partner Portal</Text>
+                <Text style={styles.panelSub}>Please enter your registered mobile number to proceed.</Text>
+
+                <View style={styles.formBlock}>
+                  <Text style={styles.fieldLabel}>Mobile Number</Text>
+                  <View style={styles.mobileRow}>
+                    <Pressable style={styles.ccBox} onPress={() => setCcOpen(true)}>
+                      <Text style={styles.ccText}>{dialCode}</Text>
+                      <MaterialIcons name="keyboard-arrow-down" size={20} color={C.onSurfaceVariant} />
+                    </Pressable>
+                    <View style={styles.inputGrow}>
+                      <TextInput
+                        value={cleanMobile}
+                        onChangeText={(v) => setMobile(v.replace(/\D/g, '').slice(0, 10))}
+                        keyboardType="phone-pad"
+                        placeholder="98765 43210"
+                        placeholderTextColor={C.outlineVariant}
+                        style={styles.mobileInput}
+                      />
+                    </View>
+                  </View>
+
+                  <Pressable onPress={onSendOtp} disabled={sendingOtp} style={({ pressed }) => [styles.gradientPress, pressed && styles.pressed]}>
+                    <LinearGradient colors={[C.secondary, C.gradientEnd]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.gradientBtn}>
+                      <Text style={styles.gradientBtnText}>{sendingOtp ? 'Sending...' : 'Send OTP'}</Text>
+                      <MaterialIcons name="arrow-forward" size={22} color={C.onSecondary} />
+                    </LinearGradient>
+                  </Pressable>
+                </View>
+
+                <View style={styles.orWrap}>
+                  <View style={styles.orLine} />
+                  <Text style={styles.orText}>OR</Text>
+                  <View style={styles.orLine} />
+                </View>
+
+                <Pressable
+                  style={({ pressed }) => [styles.outlineBtn, pressed && styles.outlineBtnPressed]}
+                  onPress={() => navigation.navigate('PartnerPasswordLogin', { prefilledMobile: cleanMobile })}
+                >
+                  <MaterialIcons name="lock" size={22} color={C.primary} />
+                  <Text style={styles.outlineBtnText}>Login with Password</Text>
+                </Pressable>
+
+                <View style={styles.registerBlock}>
+                  <Text style={styles.registerHint}>New to Atelier?</Text>
+                  <Pressable onPress={() => navigation.navigate('PartnerProfileSetup', { mobile: cleanMobile })}>
+                    <Text style={styles.registerLink}>Register Now</Text>
+                  </Pressable>
+                </View>
+
+                <View style={styles.footerLinks}>
+                  <Pressable onPress={() => openFooter('Privacy')}>
+                    <Text style={styles.footerLink}>Privacy</Text>
+                  </Pressable>
+                  <Pressable onPress={() => openFooter('Terms')}>
+                    <Text style={styles.footerLink}>Terms</Text>
+                  </Pressable>
+                  <Pressable onPress={() => openFooter('Help Center')}>
+                    <Text style={styles.footerLink}>Help Center</Text>
+                  </Pressable>
+                </View>
               </View>
-            </View>
-            <Text style={styles.versionText}>Version 4.2.0 • Editorial Artisan Edition</Text>
+            </ScrollView>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+
+      {isWide && (
+        <View style={styles.cornerDecor} pointerEvents="none">
+          <Image
+            source={{
+              uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBK1nwIPrwMe78SGwevIClK9uB-9QCxRR67KiWas8LCUsxldmeWWgE14agAIqnzBPxN-f3FQLiBfS_zRMMAlQYADatnci1q4hvVcyiqotQjAjey40OhMkuH8_rKO29SLE2OPbKAYJ-phGnbZktky9_51Th5IYphmtcAC83S1R9Zr563aIhvsB2JyDZB5S9pE6bDTrq3_YKuq7YFJpXqnhzqPRjgaVXJmHVAVVe6WL1H3ohl5m7Hf65LXTOyUyLr12ghoQ8GBT6tzU4',
+            }}
+            style={styles.cornerImage}
+          />
+        </View>
+      )}
+
+      <Modal visible={ccOpen} transparent animationType="fade" onRequestClose={() => setCcOpen(false)}>
+        <View style={styles.modalRoot}>
+          <Pressable style={styles.modalDim} onPress={() => setCcOpen(false)} accessibilityRole="button" accessibilityLabel="Close country picker" />
+          <View style={styles.modalCenter}>
+            <View style={styles.modalSheet}>
+              {DIAL_CODES.map((c) => (
+                <Pressable
+                  key={c}
+                  style={styles.modalRow}
+                  onPress={() => {
+                    setDialCode(c);
+                    setCcOpen(false);
+                  }}
+                >
+                  <Text style={[styles.modalRowText, dialCode === c && styles.modalRowTextActive]}>{c}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f0fcfa' },
+  root: { flex: 1, backgroundColor: C.surface },
+  safeTop: { flex: 1, backgroundColor: C.surface },
   flex: { flex: 1 },
-  scrollContainer: { flexGrow: 1, backgroundColor: '#f0fcfa' },
-  heroWrap: { width: '100%', backgroundColor: '#313c3b' },
-  heroImage: { width: '100%', height: '100%' },
-  heroOverlay: { flex: 1, justifyContent: 'flex-start', paddingTop: 44, paddingHorizontal: 24 },
-  brand: { color: '#FFFFFF', fontSize: fontScale(32), fontWeight: '900', fontStyle: 'italic' },
-  brandSub: { color: '#b9eed6', fontSize: fontScale(10), letterSpacing: 2.2, marginTop: 4 },
-  formCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    shadowColor: '#131e1c',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
-  },
-  demoOtpBanner: {
-    backgroundColor: 'rgba(182,235,211,0.35)',
-    borderColor: 'rgba(54,104,85,0.35)',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginBottom: 10,
-  },
-  demoOtpText: { color: '#1c4f3e', fontSize: fontScale(11), fontWeight: '700' },
-  heading: { color: '#313c3b', fontWeight: '700', letterSpacing: -0.8 },
-  sub: { color: '#404944', marginTop: 8, marginBottom: 24, fontSize: fontScale(14), lineHeight: 20 },
-  fieldGroup: { marginBottom: 20 },
-  label: { color: '#4f5a56', fontSize: fontScale(11), fontWeight: '700', letterSpacing: 1.5, marginBottom: 8 },
-  inputRow: {
-    minHeight: 56,
-    borderRadius: 14,
-    backgroundColor: '#deebe8',
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingBottom: 12,
+    backgroundColor: 'rgba(240, 252, 250, 0.92)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(192, 201, 195, 0.35)',
   },
-  countryCode: { color: '#366855', fontWeight: '600', marginRight: 10, fontSize: fontScale(15) },
-  mobileInput: {
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topBarTitle: {
     flex: 1,
-    color: '#313c3b',
-    fontSize: fontScale(16),
-    borderWidth: 0,
-    outlineWidth: 0,
-    outlineColor: 'transparent',
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '800',
+    color: C.primary,
+    letterSpacing: -0.3,
   },
-  progressTrack: { height: 3, backgroundColor: '#e4f0ee', borderRadius: 999, overflow: 'hidden', marginTop: 8 },
-  progressFill: { height: '100%', backgroundColor: '#366855', borderRadius: 999 },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  resendText: { color: '#366855', fontWeight: '700', fontSize: fontScale(11), letterSpacing: 1 },
-  resendDisabled: { opacity: 0.45 },
-  otpRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  otpInput: {
-    width: 54,
-    height: 54,
+  topBarSpacer: { width: 40 },
+  mainRow: { flex: 1, flexDirection: 'row' },
+  mainCol: { flexDirection: 'column' },
+  leftPanel: {
+    width: '50%',
+    backgroundColor: C.surfaceContainerLow,
+    paddingHorizontal: 48,
+    paddingVertical: 48,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  blob: {
+    position: 'absolute',
+    opacity: 0.22,
+    borderRadius: 120,
+  },
+  blobTop: {
+    width: 280,
+    height: 280,
+    top: -60,
+    left: -60,
+    backgroundColor: C.secondaryContainer,
+    transform: [{ rotate: '12deg' }, { scaleX: 1.1 }],
+  },
+  blobBottom: {
+    width: 240,
+    height: 240,
+    bottom: -50,
+    right: -40,
+    backgroundColor: C.tertiaryFixed,
+    opacity: 0.35,
+    transform: [{ rotate: '-8deg' }],
+  },
+  leftInner: { maxWidth: 520, zIndex: 2 },
+  accentRule: { width: 64, height: 4, backgroundColor: C.secondary, borderRadius: 999, marginBottom: 32 },
+  leftHeadline: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: C.primary,
+    lineHeight: 54,
+    letterSpacing: -1,
+  },
+  leftHeadlineAccent: { color: C.secondary },
+  leftBody: {
+    marginTop: 20,
+    fontSize: 18,
+    lineHeight: 28,
+    color: C.onSurfaceVariant,
+    maxWidth: 480,
+  },
+  featureGrid: { marginTop: 40, flexDirection: 'row', gap: 24 },
+  featureCard: {
+    flex: 1,
+    backgroundColor: C.surfaceContainerLowest,
     borderRadius: 12,
-    backgroundColor: '#deebe8',
-    borderWidth: 0,
-    outlineWidth: 0,
-    outlineColor: 'transparent',
-    color: '#313c3b',
-    fontSize: fontScale(22),
-    fontWeight: '700',
+    padding: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  otpHint: { marginTop: 8, color: '#6d7873', fontSize: fontScale(11) },
-  signInButton: { marginTop: 8, borderRadius: 14, overflow: 'hidden' },
-  signInGradient: { height: 56, alignItems: 'center', justifyContent: 'center' },
-  signInText: { color: '#FFFFFF', fontWeight: '700', fontSize: fontScale(18) },
-  buttonPressed: { transform: [{ scale: 0.985 }] },
-  buttonDisabled: { opacity: 0.7 },
-  footerBlock: { marginTop: 28, alignItems: 'center' },
-  dividerRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16 },
-  divider: { width: 30, height: 1, backgroundColor: 'rgba(112,121,116,0.35)' },
-  footerLabel: { color: '#5f6b66', fontSize: fontScale(12), fontWeight: '500' },
-  applyText: {
-    color: '#1c4f3e',
+  featureIcon: { marginBottom: 10 },
+  featureTitle: { fontSize: 13, fontWeight: '600', color: C.primary },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 32, paddingTop: 28, paddingBottom: 48 },
+  scrollContentWide: { paddingVertical: 56, paddingHorizontal: 64, alignItems: 'center' },
+  formColumn: { width: '100%', maxWidth: 420 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+  brandTag: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 3.2,
+    color: C.secondary,
+    textTransform: 'uppercase',
+  },
+  panelTitle: { fontSize: 34, fontWeight: '700', color: C.primary, letterSpacing: -0.5 },
+  panelSub: { marginTop: 10, fontSize: 15, color: C.onSurfaceVariant, lineHeight: 22 },
+  formBlock: { marginTop: 36 },
+  fieldLabel: {
+    fontSize: 11,
     fontWeight: '700',
-    fontSize: fontScale(16),
-    paddingBottom: 2,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: C.onSurfaceVariant,
+    marginLeft: 4,
+    marginBottom: 12,
+  },
+  mobileRow: { flexDirection: 'row', gap: 12, height: 56, alignItems: 'stretch' },
+  ccBox: {
+    width: 88,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    backgroundColor: C.surfaceContainerHigh,
+    borderRadius: 12,
+  },
+  ccText: { fontSize: 15, fontWeight: '700', color: C.primary },
+  inputGrow: {
+    flex: 1,
+    backgroundColor: C.surfaceContainerHigh,
+    borderRadius: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
     borderBottomWidth: 2,
-    borderBottomColor: 'rgba(54,104,85,0.2)',
+    borderBottomColor: 'transparent',
   },
-  supportSection: { alignItems: 'center', marginTop: 28, marginBottom: 10, paddingHorizontal: 12 },
-  supportRow: { flexDirection: 'row', gap: 26 },
-  supportItem: { flexDirection: 'row', alignItems: 'center', gap: 6, opacity: 0.7 },
-  supportText: { color: '#5f6b66', fontSize: fontScale(11), fontWeight: '600', letterSpacing: 0.4 },
-  versionText: { marginTop: 16, color: 'rgba(112,121,116,0.55)', fontSize: fontScale(10), letterSpacing: 1.2, textTransform: 'uppercase' },
+  mobileInput: { fontSize: 18, fontWeight: '600', color: C.primary, paddingVertical: 0, minHeight: 52 },
+  gradientPress: { marginTop: 28, borderRadius: 999, overflow: 'hidden', shadowColor: '#1a3d32', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.22, shadowRadius: 12, elevation: 6 },
+  pressed: { opacity: 0.94, transform: [{ scale: 0.99 }] },
+  gradientBtn: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  gradientBtnText: { color: C.onSecondary, fontSize: 17, fontWeight: '700' },
+  orWrap: { flexDirection: 'row', alignItems: 'center', marginTop: 36, marginBottom: 8 },
+  orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(217, 229, 227, 0.65)' },
+  orText: {
+    paddingHorizontal: 18,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2,
+    color: C.outline,
+    textTransform: 'uppercase',
+    backgroundColor: C.surface,
+  },
+  outlineBtn: {
+    marginTop: 16,
+    height: 56,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(192, 201, 195, 0.45)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: C.surface,
+  },
+  outlineBtnPressed: { backgroundColor: C.surfaceContainerLow },
+  outlineBtnText: { fontSize: 16, fontWeight: '700', color: C.primary },
+  registerBlock: { marginTop: 28, alignItems: 'center', gap: 6 },
+  registerHint: { fontSize: 14, color: C.onSurfaceVariant },
+  registerLink: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: C.secondary,
+    textDecorationLine: 'underline',
+    textDecorationColor: C.secondaryContainer,
+  },
+  footerLinks: {
+    marginTop: 44,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 22,
+    flexWrap: 'wrap',
+  },
+  footerLink: { fontSize: 10, fontWeight: '800', letterSpacing: 1.8, color: C.outlineVariant, textTransform: 'uppercase' },
+  cornerDecor: {
+    position: 'absolute',
+    right: 28,
+    bottom: 36,
+    width: 160,
+    height: 160,
+    opacity: 0.12,
+    borderRadius: 80,
+    overflow: 'hidden',
+  },
+  cornerImage: { width: '100%', height: '100%' },
+  modalRoot: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  modalDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(19, 30, 28, 0.35)',
+  },
+  modalCenter: { width: '100%', paddingHorizontal: 24, zIndex: 1, alignItems: 'center' },
+  modalSheet: {
+    width: '100%',
+    maxWidth: 280,
+    backgroundColor: C.surfaceContainerLowest,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.outlineVariant,
+  },
+  modalRow: { paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.surfaceVariant },
+  modalRowText: { fontSize: 17, fontWeight: '600', color: C.primary },
+  modalRowTextActive: { color: C.secondary, fontWeight: '800' },
 });

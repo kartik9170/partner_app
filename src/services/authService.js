@@ -44,10 +44,12 @@ export const loginPartnerWithOtp = async ({ mobile, otp }) => {
   const mobileDigits = String(mobile || '').replace(/\D/g, '');
   const otpDigits = String(otp || '').replace(/\D/g, '');
   if (mobileDigits.length !== 10) throw new Error('Enter a valid 10-digit mobile number.');
-  if (otpDigits.length !== 4) throw new Error('Enter the 4-digit OTP.');
+  if (otpDigits.length !== 4 && otpDigits.length !== 6) {
+    throw new Error('Enter the 4-digit or 6-digit OTP.');
+  }
 
   // Local test credential for partner app demo/testing.
-  if (mobileDigits === '1234567890' && otpDigits === '1234') {
+  if (mobileDigits === '1234567890' && (otpDigits === '1234' || otpDigits === '123456')) {
     return {
       token: 'partner-demo-token',
       user: {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { P } from '../theme/partnerTokens';
 import { fontScale } from '../utils/responsive';
 
 const NAV_ITEMS = [
@@ -17,7 +18,7 @@ export default function PartnerBottomNav({ activeKey = 'home', onPressItem }) {
         const active = item.key === activeKey;
         return (
           <Pressable key={item.key} onPress={() => onPressItem?.(item.key)} style={[styles.item, active && styles.itemActive]}>
-            <MaterialIcons name={item.icon} size={22} color={active ? '#366855' : '#7a8681'} />
+            <MaterialIcons name={item.icon} size={22} color={active ? P.secondary : P.outline} />
             <Text style={[styles.label, active && styles.labelActive]}>{item.label}</Text>
           </Pressable>
         );
@@ -32,9 +33,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderTopWidth: 1,
-    borderColor: '#deebe8',
+    borderColor: P.surfaceContainerHigh,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 8,
@@ -56,12 +57,12 @@ const styles = StyleSheet.create({
   },
   label: {
     marginTop: 2,
-    color: '#6b7772',
+    color: P.outline,
     fontSize: fontScale(10),
     fontWeight: '600',
   },
   labelActive: {
-    color: '#366855',
+    color: P.secondary,
     fontWeight: '700',
   },
 });

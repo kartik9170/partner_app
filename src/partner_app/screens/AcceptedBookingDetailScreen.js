@@ -1,19 +1,25 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { fontScale } from '../../utils/responsive';
+import useBooking from '../../hooks/useBooking';
 
 export default function AcceptedBookingDetailScreen({ navigation, route }) {
   const booking = route?.params?.booking;
+  const { bookings, startLiveTracking, stopLiveTracking } = useBooking();
+  const latestBooking = useMemo(
+    () => bookings.find((b) => b.id === booking?.id) || booking,
+    [bookings, booking]
+  );
 
   const details = {
-    customerName: booking?.customerName || 'Priya Sharma',
-    date: booking?.date || 'Today',
-    time: booking?.time || '2:30 PM',
-    address: booking?.address || 'Flat 402, Green Meadows Apartment, Sector 45, Gurgaon, Haryana 122003',
-    totalAmount: booking?.amount || 798,
-    phone: booking?.phone || '+919876543210',
+    customerName: latestBooking?.customerName || 'Priya Sharma',
+    date: latestBooking?.date || 'Today',
+    time: latestBooking?.time || '2:30 PM',
+    address: latestBooking?.address || 'Flat 402, Green Meadows Apartment, Sector 45, Gurgaon, Haryana 122003',
+    totalAmount: latestBooking?.amount || 798,
+    phone: latestBooking?.phone || '+919876543210',
   };
 
   const openVerification = () => {
@@ -43,6 +49,20 @@ export default function AcceptedBookingDetailScreen({ navigation, route }) {
       return;
     }
     Alert.alert('Call Unavailable', `Please call manually: ${details.phone}`);
+  };
+
+  const toggleLiveTracking = async () => {
+    try {
+      if (latestBooking?.liveTracking) {
+        stopLiveTracking(latestBooking?.id);
+        Alert.alert('Live location stopped', 'Client tracking has been paused.');
+      } else {
+        await startLiveTracking(latestBooking?.id);
+        Alert.alert('Live location started', 'Client can now track your current location.');
+      }
+    } catch (e) {
+      Alert.alert('Live location error', e?.message || 'Could not update live tracking.');
+    }
   };
 
   return (
@@ -87,6 +107,15 @@ export default function AcceptedBookingDetailScreen({ navigation, route }) {
                 <Text style={styles.sectionTitle}>Service Location</Text>
               </View>
               <Text style={styles.locationAddress}>{details.address}</Text>
+              <View style={styles.liveMetaRow}>
+                <MaterialIcons name="my-location" size={14} color="#366855" />
+                <Text style={styles.liveMetaText}>
+                  {latestBooking?.liveLocation?.place
+                    || (latestBooking?.liveLocation?.latitude
+                      ? `${latestBooking?.liveLocation?.latitude?.toFixed?.(5)}, ${latestBooking?.liveLocation?.longitude?.toFixed?.(5)}`
+                      : 'Live location not started')}
+                </Text>
+              </View>
             </View>
             <Pressable style={styles.mapsBtn} onPress={openMaps}>
               <MaterialIcons name="map" size={18} color="#313c3b" />
@@ -102,6 +131,10 @@ export default function AcceptedBookingDetailScreen({ navigation, route }) {
             />
             <View style={styles.mapOverlay} />
           </View>
+          <Pressable style={styles.liveToggleBtn} onPress={toggleLiveTracking}>
+            <MaterialIcons name={latestBooking?.liveTracking ? 'location-disabled' : 'share-location'} size={16} color="#ffffff" />
+            <Text style={styles.liveToggleText}>{latestBooking?.liveTracking ? 'Stop Live Location' : 'Start Live Location'}</Text>
+          </Pressable>
         </View>
 
         <View style={styles.summaryCard}>
@@ -214,6 +247,8 @@ const styles = StyleSheet.create({
   locationTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   sectionTitle: { color: '#313c3b', fontSize: fontScale(18), fontWeight: '700' },
   locationAddress: { color: '#5f6b66', fontSize: fontScale(13), lineHeight: 18, paddingLeft: 26 },
+  liveMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, paddingLeft: 25 },
+  liveMetaText: { color: '#366855', fontSize: fontScale(11), fontWeight: '600', flex: 1 },
   mapsBtn: {
     minWidth: 64,
     borderRadius: 10,
@@ -226,6 +261,18 @@ const styles = StyleSheet.create({
   mapCard: { height: 170, marginHorizontal: 14, marginBottom: 14, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(192,201,195,0.25)' },
   mapImage: { width: '100%', height: '100%' },
   mapOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.04)' },
+  liveToggleBtn: {
+    marginHorizontal: 14,
+    marginBottom: 14,
+    minHeight: 42,
+    borderRadius: 10,
+    backgroundColor: '#366855',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  liveToggleText: { color: '#ffffff', fontSize: fontScale(13), fontWeight: '700' },
   summaryCard: { borderRadius: 16, backgroundColor: '#eaf6f4', padding: 14 },
   summaryHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   headerLine: { flex: 1, height: 1, backgroundColor: 'rgba(112,121,116,0.25)' },

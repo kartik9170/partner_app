@@ -3,7 +3,9 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import useBooking from '../../hooks/useBooking';
+import { P } from '../../theme/partnerTokens';
 import { fontScale } from '../../utils/responsive';
+import MonthlyProgressLineChart from '../../components/MonthlyProgressLineChart';
 import PartnerBottomNav from '../../components/PartnerBottomNav';
 
 export default function EarningsScreen({ route, navigation }) {
@@ -32,7 +34,7 @@ export default function EarningsScreen({ route, navigation }) {
         status: 'Processed',
         positive: false,
         icon: 'account-balance',
-        iconBg: '#d9e5e3',
+        iconBg: '#DADADA',
       },
       {
         id: 'tx-3',
@@ -53,7 +55,7 @@ export default function EarningsScreen({ route, navigation }) {
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
           <Pressable>
-            <MaterialIcons name="menu" size={22} color="#131e1c" />
+            <MaterialIcons name="menu" size={22} color={P.primary} />
           </Pressable>
           <Text style={styles.brand}>Emerald Pro</Text>
         </View>
@@ -100,18 +102,15 @@ export default function EarningsScreen({ route, navigation }) {
           </View>
 
           <View style={styles.progressCard}>
-            <View style={styles.chartRow}>
-              {[
-                { key: 'W1', h: '40%', active: false },
-                { key: 'W2', h: '65%', active: false },
-                { key: 'W3', h: '95%', active: true },
-                { key: 'W4', h: '55%', active: false },
-              ].map((item) => (
-                <View key={item.key} style={styles.chartCol}>
-                  <View style={[styles.chartBar, { height: item.h }, item.active && styles.chartBarActive]} />
-                  <Text style={[styles.chartLabel, item.active && styles.chartLabelActive]}>{item.key}</Text>
-                </View>
-              ))}
+            <View style={styles.chartBlock}>
+              <MonthlyProgressLineChart activeIndex={2} />
+              <View style={styles.weekLabelsRow}>
+                {['W1', 'W2', 'W3', 'W4'].map((label, index) => (
+                  <View key={label} style={styles.weekLabelCell}>
+                    <Text style={[styles.chartLabel, index === 2 && styles.chartLabelActive]}>{label}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
 
             <View style={styles.metricsRow}>
@@ -138,7 +137,7 @@ export default function EarningsScreen({ route, navigation }) {
           {transactions.map((item) => (
             <View key={item.id} style={styles.txCard}>
               <View style={[styles.txIconWrap, { backgroundColor: item.iconBg }]}>
-                <MaterialIcons name={item.icon} size={22} color="#1c4f3e" />
+                <MaterialIcons name={item.icon} size={22} color={P.secondary} />
               </View>
               <View style={styles.txMain}>
                 <Text style={styles.txName}>{item.name}</Text>
@@ -169,7 +168,7 @@ export default function EarningsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f0fcfa' },
+  safeArea: { flex: 1, backgroundColor: P.surface },
   topBar: {
     height: 64,
     paddingHorizontal: 16,
@@ -179,7 +178,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(240,252,250,0.92)',
   },
   topLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  brand: { color: '#131e1c', fontSize: fontScale(22), fontWeight: '800' },
+  brand: { color: P.primary, fontSize: fontScale(22), fontWeight: '800' },
   avatarWrap: {
     width: 34,
     height: 34,
@@ -187,14 +186,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(192,201,195,0.4)',
-    backgroundColor: '#d9e5e3',
+    backgroundColor: P.surfaceContainerHighest,
   },
   avatar: { width: '100%', height: '100%' },
   content: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 24 },
   contentWithPreviewNav: { paddingBottom: 110 },
   balanceCard: {
     borderRadius: 30,
-    backgroundColor: '#313c3b',
+    backgroundColor: P.primary,
     padding: 24,
     marginBottom: 24,
     overflow: 'hidden',
@@ -202,42 +201,49 @@ const styles = StyleSheet.create({
   balanceGlow: { position: 'absolute', top: -60, right: -50, width: 190, height: 190, borderRadius: 100, backgroundColor: 'rgba(54,104,85,0.22)' },
   balanceLabel: { color: 'rgba(255,255,255,0.75)', fontSize: fontScale(11), fontWeight: '700', letterSpacing: 1.8, marginBottom: 6 },
   amountRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginBottom: 18 },
-  currency: { color: '#b9eed6', fontSize: fontScale(34), fontWeight: '700' },
-  amount: { color: '#FFFFFF', fontSize: fontScale(50), fontWeight: '900', letterSpacing: -1 },
+  currency: { color: P.secondaryFixedDim, fontSize: fontScale(34), fontWeight: '700' },
+  amount: { color: P.onPrimary, fontSize: fontScale(50), fontWeight: '900', letterSpacing: -1 },
   withdrawBtn: {
     minHeight: 52,
     borderRadius: 999,
-    backgroundColor: '#366855',
+    backgroundColor: P.secondary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  withdrawText: { color: '#FFFFFF', fontSize: fontScale(16), fontWeight: '700' },
+  withdrawText: { color: P.onSecondary, fontSize: fontScale(16), fontWeight: '700' },
   progressSection: { marginBottom: 24 },
   progressHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 },
-  progressTitle: { color: '#313c3b', fontSize: fontScale(28), fontWeight: '800' },
-  progressSub: { color: '#5f6b66', fontSize: fontScale(12), fontWeight: '500' },
-  growthPill: { backgroundColor: '#a6f2d4', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 3 },
-  growthText: { color: '#004332', fontSize: fontScale(11), fontWeight: '800' },
-  progressCard: { borderRadius: 26, backgroundColor: '#eaf6f4', padding: 16 },
-  chartRow: { height: 160, flexDirection: 'row', gap: 8, alignItems: 'flex-end', marginBottom: 12 },
-  chartCol: { flex: 1, alignItems: 'center', gap: 5 },
-  chartBar: { width: '100%', borderTopLeftRadius: 12, borderTopRightRadius: 12, backgroundColor: '#d9e5e3' },
-  chartBarActive: { backgroundColor: '#b6ebd3' },
-  chartLabel: { color: '#707974', fontSize: fontScale(10), fontWeight: '700' },
-  chartLabelActive: { color: '#366855' },
+  progressTitle: { color: P.primary, fontSize: fontScale(28), fontWeight: '800' },
+  progressSub: { color: P.onSurfaceVariant, fontSize: fontScale(12), fontWeight: '500' },
+  growthPill: {
+    backgroundColor: P.tertiaryFixed,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  growthText: { color: P.tertiary, fontSize: fontScale(11), fontWeight: '800' },
+  progressCard: { borderRadius: 26, backgroundColor: P.surfaceContainerLow, padding: 16 },
+  chartBlock: { marginBottom: 4 },
+  weekLabelsRow: { flexDirection: 'row', marginTop: 6, paddingHorizontal: 4 },
+  weekLabelCell: { flex: 1, alignItems: 'center' },
+  chartLabel: { color: P.outline, fontSize: fontScale(10), fontWeight: '700' },
+  chartLabelActive: { color: P.secondary },
   metricsRow: { flexDirection: 'row', gap: 10 },
-  metricCard: { flex: 1, borderRadius: 16, backgroundColor: '#FFFFFF', padding: 12 },
-  metricLabel: { color: '#5f6b66', fontSize: fontScale(10), fontWeight: '700', letterSpacing: 1.2 },
-  metricValue: { color: '#313c3b', fontSize: fontScale(25), fontWeight: '800', marginTop: 2 },
+  metricCard: { flex: 1, borderRadius: 16, backgroundColor: P.surfaceContainerLowest, padding: 12 },
+  metricLabel: { color: P.onSurfaceVariant, fontSize: fontScale(10), fontWeight: '700', letterSpacing: 1.2 },
+  metricValue: { color: P.primary, fontSize: fontScale(25), fontWeight: '800', marginTop: 2 },
   txSection: { marginBottom: 12 },
   txHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  txTitle: { color: '#313c3b', fontSize: fontScale(24), fontWeight: '800' },
-  txAction: { color: '#366855', fontSize: fontScale(14), fontWeight: '700' },
+  txTitle: { color: P.primary, fontSize: fontScale(24), fontWeight: '800' },
+  txAction: { color: P.secondary, fontSize: fontScale(14), fontWeight: '700' },
   txCard: {
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: P.surfaceContainerLowest,
     padding: 12,
     marginBottom: 8,
     flexDirection: 'row',
@@ -246,14 +252,14 @@ const styles = StyleSheet.create({
   },
   txIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   txMain: { flex: 1 },
-  txName: { color: '#131e1c', fontSize: fontScale(15), fontWeight: '700' },
-  txSub: { color: '#5f6b66', fontSize: fontScale(11), marginTop: 1 },
+  txName: { color: P.onSurface, fontSize: fontScale(15), fontWeight: '700' },
+  txSub: { color: P.onSurfaceVariant, fontSize: fontScale(11), marginTop: 1 },
   txRight: { alignItems: 'flex-end' },
-  txAmount: { color: '#313c3b', fontSize: fontScale(16), fontWeight: '800' },
-  txAmountNegative: { color: '#ba1a1a' },
+  txAmount: { color: P.primary, fontSize: fontScale(16), fontWeight: '800' },
+  txAmountNegative: { color: P.error },
   txStatus: {
     marginTop: 3,
-    color: '#1c4f3e',
+    color: P.secondary,
     backgroundColor: 'rgba(182,235,211,0.45)',
     fontSize: fontScale(9),
     fontWeight: '700',
@@ -263,6 +269,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     overflow: 'hidden',
   },
-  txStatusMuted: { backgroundColor: '#d9e5e3', color: '#5f6b66' },
+  txStatusMuted: { backgroundColor: P.surfaceContainerHighest, color: P.onSurfaceVariant },
   pressed: { transform: [{ scale: 0.985 }] },
 });

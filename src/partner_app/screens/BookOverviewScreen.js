@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import useBooking from '../../hooks/useBooking';
 import { BOOKING_STATUS } from '../../utils/constants';
+import { P } from '../../theme/partnerTokens';
 import { fontScale } from '../../utils/responsive';
 import PartnerBottomNav from '../../components/PartnerBottomNav';
 
@@ -117,7 +118,7 @@ export default function BookOverviewScreen({ navigation, route }) {
           <Text style={styles.topTitle}>Atelier Pro</Text>
         </View>
         <Pressable style={styles.notifyBtn}>
-          <MaterialIcons name="notifications" size={20} color="#366855" />
+          <MaterialIcons name="notifications" size={20} color={P.secondary} />
         </Pressable>
       </View>
 
@@ -130,7 +131,7 @@ export default function BookOverviewScreen({ navigation, route }) {
               <Text style={styles.nextLabel}>Next Session</Text>
               <Text style={styles.nextText}>10:00 AM — Priya S.</Text>
             </View>
-            <MaterialIcons name="arrow-forward-ios" size={14} color="#a6f2d4" />
+            <MaterialIcons name="arrow-forward-ios" size={14} color={P.tertiaryFixed} />
           </View>
           <View style={styles.heroGlow} />
         </View>
@@ -138,7 +139,7 @@ export default function BookOverviewScreen({ navigation, route }) {
         <View style={styles.instantCard}>
           <View style={styles.instantLeft}>
             <View style={styles.instantIcon}>
-              <MaterialIcons name="bolt" size={18} color="#366855" />
+              <MaterialIcons name="bolt" size={18} color={P.secondary} />
             </View>
             <View>
               <Text style={styles.instantTitle}>Instant Booking</Text>
@@ -148,8 +149,8 @@ export default function BookOverviewScreen({ navigation, route }) {
           <Switch
             value={instantBooking}
             onValueChange={setInstantBooking}
-            trackColor={{ false: '#d9e5e3', true: '#366855' }}
-            thumbColor="#FFFFFF"
+            trackColor={{ false: P.surfaceContainerHighest, true: P.secondary }}
+            thumbColor={P.surfaceContainerLowest}
           />
         </View>
 
@@ -180,7 +181,7 @@ export default function BookOverviewScreen({ navigation, route }) {
                   </View>
                   <View style={styles.slotArea}>
                     <View style={styles.breakCard}>
-                      <MaterialIcons name="coffee" size={14} color="#707974" />
+                      <MaterialIcons name="coffee" size={14} color={P.outline} />
                       <Text style={styles.breakText}>Lunch Break</Text>
                     </View>
                   </View>
@@ -197,7 +198,7 @@ export default function BookOverviewScreen({ navigation, route }) {
                   </View>
                   <View style={styles.slotArea}>
                     <Pressable style={styles.emptySlot}>
-                      <MaterialIcons name="add" size={18} color="#a0aba6" />
+                      <MaterialIcons name="add" size={18} color={P.outlineVariant} />
                     </Pressable>
                   </View>
                 </View>
@@ -227,7 +228,7 @@ export default function BookOverviewScreen({ navigation, route }) {
                     <MaterialIcons
                       name={event.style === 'tertiary' ? 'schedule' : 'check-circle'}
                       size={16}
-                      color={event.style === 'tertiary' ? '#004332' : '#366855'}
+                      color={event.style === 'tertiary' ? P.tertiary : P.secondary}
                     />
                   </Pressable>
                 </View>
@@ -251,7 +252,7 @@ export default function BookOverviewScreen({ navigation, route }) {
 
       {showPreviewNav ? (
         <Pressable style={styles.fab} onPress={() => navigation.navigate(detailRouteName, { booking: data[0] })}>
-          <MaterialIcons name="add" size={28} color="#FFFFFF" />
+          <MaterialIcons name="add" size={28} color={P.onPrimary} />
         </Pressable>
       ) : null}
     </SafeAreaView>
@@ -259,29 +260,37 @@ export default function BookOverviewScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#d0ddda' },
+  safeArea: { flex: 1, backgroundColor: P.surfaceDim },
   topBar: {
     height: 64,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#e4f0ee',
+    backgroundColor: P.surfaceContainer,
   },
   topLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  avatarWrap: { width: 40, height: 40, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(192,201,195,0.35)', backgroundColor: '#d9e5e3' },
+  avatarWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(192,201,195,0.35)',
+    backgroundColor: P.surfaceContainerHighest,
+  },
   avatar: { width: '100%', height: '100%' },
-  topTitle: { color: '#313c3b', fontSize: fontScale(30), fontWeight: '900', letterSpacing: -1 },
+  topTitle: { color: P.primary, fontSize: fontScale(30), fontWeight: '900', letterSpacing: -1 },
   notifyBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   content: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 22 },
   contentWithPreviewNav: { paddingBottom: 132 },
   heroCard: {
     borderRadius: 24,
-    backgroundColor: '#313c3b',
+    backgroundColor: P.primary,
     padding: 16,
     marginBottom: 12,
     overflow: 'hidden',
-    shadowColor: '#131e1c',
+    shadowColor: P.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.18,
     shadowRadius: 18,
@@ -292,10 +301,10 @@ const styles = StyleSheet.create({
   heroNext: { borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   nextLabel: { color: 'rgba(255,255,255,0.65)', fontSize: fontScale(10), textTransform: 'uppercase' },
   nextText: { color: '#FFFFFF', fontSize: fontScale(14), fontWeight: '700', marginTop: 2 },
-  heroGlow: { position: 'absolute', top: -30, right: -30, width: 128, height: 128, borderRadius: 64, backgroundColor: 'rgba(54,104,85,0.24)' },
+  heroGlow: { position: 'absolute', top: -30, right: -30, width: 128, height: 128, borderRadius: 64, backgroundColor: 'rgba(54,104,85,0.2)' },
   instantCard: {
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: P.surfaceContainerLowest,
     borderWidth: 1,
     borderColor: 'rgba(192,201,195,0.25)',
     padding: 14,
@@ -305,12 +314,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   instantLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 8 },
-  instantIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(182,235,211,0.4)', alignItems: 'center', justifyContent: 'center' },
-  instantTitle: { color: '#313c3b', fontSize: fontScale(14), fontWeight: '700' },
-  instantSub: { color: '#5f6b66', fontSize: fontScale(11), marginTop: 1 },
+  instantIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(182,235,211,0.3)', alignItems: 'center', justifyContent: 'center' },
+  instantTitle: { color: P.onSurface, fontSize: fontScale(14), fontWeight: '700' },
+  instantSub: { color: P.onSurfaceVariant, fontSize: fontScale(11), marginTop: 1 },
   monthHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  monthTitle: { color: '#313c3b', fontSize: fontScale(24), fontWeight: '800' },
-  monthAction: { color: '#366855', fontSize: fontScale(11), fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  monthTitle: { color: P.primary, fontSize: fontScale(24), fontWeight: '800' },
+  monthAction: { color: P.secondary, fontSize: fontScale(11), fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   dayRow: { gap: 8, paddingBottom: 6 },
   dayItem: {
     width: 58,
@@ -318,18 +327,18 @@ const styles = StyleSheet.create({
     borderRadius: 29,
     borderWidth: 1,
     borderColor: 'rgba(192,201,195,0.35)',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: P.surfaceContainerLowest,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayItemActive: {
-    backgroundColor: '#366855',
-    borderColor: '#366855',
+    backgroundColor: P.secondary,
+    borderColor: P.secondary,
   },
-  dayLabel: { color: '#6b7772', fontSize: fontScale(10), fontWeight: '600', textTransform: 'uppercase' },
+  dayLabel: { color: P.outline, fontSize: fontScale(10), fontWeight: '600', textTransform: 'uppercase' },
   dayLabelActive: { color: 'rgba(255,255,255,0.85)' },
-  dayDate: { color: '#313c3b', fontSize: fontScale(22), fontWeight: '800', marginTop: 2 },
-  dayDateActive: { color: '#FFFFFF' },
+  dayDate: { color: P.primary, fontSize: fontScale(22), fontWeight: '800', marginTop: 2 },
+  dayDateActive: { color: P.onSecondary },
   timelineWrap: { marginTop: 8 },
   timeRow: { flexDirection: 'row', gap: 10, marginBottom: 9 },
   timeCol: { width: 44, alignItems: 'flex-end', paddingTop: 8 },
@@ -348,42 +357,42 @@ const styles = StyleSheet.create({
   breakCard: {
     height: 42,
     borderRadius: 14,
-    backgroundColor: '#e4f0ee',
+    backgroundColor: P.surfaceContainer,
     alignItems: 'center',
     paddingHorizontal: 12,
     flexDirection: 'row',
     gap: 6,
   },
-  breakText: { color: '#5f6b66', fontSize: fontScale(10), fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  breakText: { color: P.onSurfaceVariant, fontSize: fontScale(10), fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   eventCard: {
     minHeight: 62,
     borderRadius: 18,
     paddingHorizontal: 12,
     paddingVertical: 11,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: P.surfaceContainerLowest,
     borderLeftWidth: 4,
-    borderLeftColor: '#366855',
+    borderLeftColor: P.secondary,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  eventCardSoft: { backgroundColor: 'rgba(182,235,211,0.4)', borderLeftColor: '#366855' },
-  eventCardTertiary: { borderLeftColor: '#004332' },
+  eventCardSoft: { backgroundColor: 'rgba(182,235,211,0.4)', borderLeftColor: P.secondary },
+  eventCardTertiary: { borderLeftColor: P.tertiary },
   eventMain: { flex: 1, marginRight: 8 },
-  eventTitle: { color: '#313c3b', fontSize: fontScale(13), fontWeight: '700' },
-  eventTitleSoft: { color: '#1c4f3e' },
-  eventSub: { color: '#5f6b66', fontSize: fontScale(11), marginTop: 1 },
+  eventTitle: { color: P.onSurface, fontSize: fontScale(13), fontWeight: '700' },
+  eventTitleSoft: { color: P.secondary },
+  eventSub: { color: P.onSurfaceVariant, fontSize: fontScale(11), marginTop: 1 },
   eventSubSoft: { color: 'rgba(28,79,62,0.85)' },
   bottomNav: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: 1,
-    borderColor: 'rgba(192,201,195,0.25)',
+    borderColor: 'rgba(222,235,232,0.9)',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -401,8 +410,8 @@ const styles = StyleSheet.create({
   bottomNavItemActive: {
     backgroundColor: 'rgba(182,235,211,0.45)',
   },
-  bottomNavText: { color: '#5f6b66', fontSize: fontScale(10), fontWeight: '600', marginTop: 2 },
-  bottomNavTextActive: { color: '#366855', fontWeight: '700' },
+  bottomNavText: { color: P.onSurfaceVariant, fontSize: fontScale(10), fontWeight: '600', marginTop: 2 },
+  bottomNavTextActive: { color: P.secondary, fontWeight: '700' },
   fab: {
     position: 'absolute',
     right: 18,
@@ -410,10 +419,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#366855',
+    backgroundColor: P.secondary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#131e1c',
+    shadowColor: P.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 16,

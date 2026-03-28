@@ -1,53 +1,270 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
+import React, { useState } from 'react';
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { clamp, fontScale } from '../../utils/responsive';
-import useAuth from '../../hooks/useAuth';
+import { sendLoginOtp } from '../../services/authService';
 
-const SERVICE_OPTIONS = ['Haircut', 'Facial', 'Massage', 'Waxing', 'Nail Art', 'Makeup'];
-const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
-
-const ONBOARDING_STEPS = [
-  { key: 'basic', title: 'Basic Registration', status: 'pending' },
-  { key: 'personal', title: 'Personal Details', status: 'pending' },
-  { key: 'documents', title: 'Document Upload', status: 'verification_pending' },
-  { key: 'services', title: 'Services', status: 'verification_pending' },
-  { key: 'location', title: 'Location Setup', status: 'verification_pending' },
-  { key: 'bank', title: 'Bank Details', status: 'verification_pending' },
-  { key: 'training', title: 'Terms & Conditions', status: 'verification_pending' },
-];
-
-const initialForm = {
-  mobile: '',
-  otp: '',
-  name: '',
-  city: '',
+const initialData = {
   fullName: '',
-  email: '',
-  address: '',
-  age: '',
-  gender: '',
+  mobile: '',
+  serviceArea: '',
   experience: '',
-  skills: [],
-  aadhaar: '',
-  pan: '',
-  selfPhoto: '',
-  certificates: '',
-  latitude: '',
-  longitude: '',
-  area: '',
-  accountHolder: '',
-  accountNumber: '',
-  ifsc: '',
-  upi: '',
-  password: '',
-  confirmPassword: '',
-  agreed: false,
+  serviceLatitude: null,
+  serviceLongitude: null,
 };
 
-function Field({ label, value, onChangeText, placeholder, keyboardType = 'default', editable = true, autoCapitalize = 'sentences', secureTextEntry }) {
+function looksLikeLatLon(str) {
+  const s = String(str || '').trim();
+  const m = /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/.exec(s);
+  if (!m) return false;
+  const lat = parseFloat(m[1], 10);
+  const lng = parseFloat(m[2], 10);
+  return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+}
+
+function formatExpoAddress(g) {
+  if (!g || typeof g !== 'object') return '';
+  const streetLine = [g.streetNumber, g.street].filter(Boolean).join(' ').trim();
+  const locality = g.district || g.subregion || '';
+  const city = g.city || '';
+  const region = g.region || '';
+  const parts = [];
+  if (streetLine) parts.push(streetLine);
+  else if (g.name && !looksLikeLatLon(g.name)) parts.push(String(g.name).trim());
+  if (locality && !parts.includes(locality)) parts.push(locality);
+  if (city && city !== locality && !parts.includes(city)) parts.push(city);
+  if (region && region !== city && !parts.includes(region)) parts.push(region);
+  if (g.postalCode) parts.push(g.postalCode);
+  if (g.country && !parts.includes(g.country)) parts.push(g.country);
+  return parts.filter(Boolean).join(', ');
+}
+
+async function reverseGeocodeNominatim(latitude, longitude) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'AtelierPartnerApp/1.0',
+    },
+  });
+  if (!res.ok) return '';
+  const data = await res.json().catch(() => ({}));
+  return String(data.display_name || '').trim();
+}
+
+async function resolveReadableAddress(latitude, longitude) {
+  const geocoded = await Location.reverseGeocodeAsync({ latitude, longitude });
+  const g = geocoded?.[0] || {};
+  let label = formatExpoAddress(g);
+  const weak = !label || label.length < 6 || looksLikeLatLon(label);
+  if (weak) {
+    const nom = await reverseGeocodeNominatim(latitude, longitude);
+    if (nom) label = nom;
+  }
+  return { label: label && !looksLikeLatLon(label) ? label : '', latitude, longitude };
+}
+
+const EXPERIENCE_OPTIONS = ['Select Level', '1-3 Years', '3-7 Years', '7-10 Years', '10+ Years (Master)'];
+
+export default function PartnerProfileSetupScreen({ navigation, route }) {
+  const preMobile = String(route?.params?.mobile || '').replace(/\D/g, '').slice(0, 10);
+  const [form, setForm] = useState({ ...initialData, mobile: preMobile });
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpSentText, setOtpSentText] = useState('Verify');
+  const [locating, setLocating] = useState(false);
+  const [experienceIdx, setExperienceIdx] = useState(0);
+
+  const cleanMobile = String(form.mobile || '').replace(/\D/g, '').slice(0, 10);
+  const update = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  const setServiceAreaText = (v) =>
+    setForm((p) => ({
+      ...p,
+      serviceArea: v,
+      serviceLatitude: null,
+      serviceLongitude: null,
+    }));
+
+  const onVerifyOtp = async () => {
+    if (cleanMobile.length !== 10) return Alert.alert('Required', 'Enter valid mobile number first.');
+    setSendingOtp(true);
+    try {
+      await sendLoginOtp(cleanMobile);
+      setOtpSentText('Resend');
+      Alert.alert('OTP sent', 'Now enter the 4-digit OTP.');
+    } catch (e) {
+      Alert.alert('OTP error', e?.message || 'Could not send OTP');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const detectLiveLocation = async () => {
+    try {
+      setLocating(true);
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Permission needed', 'Please allow location permission.');
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+      const { label, latitude, longitude } = await resolveReadableAddress(pos.coords.latitude, pos.coords.longitude);
+      if (!label) {
+        Alert.alert(
+          'Address not found',
+          'Could not turn GPS into a street or area name. Check internet and try again, or type your service area manually. Your exact coordinates are not shown on purpose — clients need a readable place.',
+        );
+        setForm((p) => ({
+          ...p,
+          serviceLatitude: latitude,
+          serviceLongitude: longitude,
+        }));
+        return;
+      }
+      setForm((p) => ({
+        ...p,
+        serviceArea: label,
+        serviceLatitude: latitude,
+        serviceLongitude: longitude,
+      }));
+    } catch (e) {
+      Alert.alert('Location error', e?.message || 'Could not detect live location.');
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const goNext = () => {
+    if (!form.fullName.trim()) return Alert.alert('Required', 'Full name is required.');
+    if (cleanMobile.length !== 10) return Alert.alert('Required', '10-digit mobile is required.');
+    if (!String(form.serviceArea || '').trim()) return Alert.alert('Required', 'Service area fill karo ya live location use karo.');
+    if (experienceIdx === 0) return Alert.alert('Required', 'Experience level select karo.');
+
+    navigation.navigate('PartnerRegisterStep2', {
+      form: {
+        ...form,
+        mobile: cleanMobile,
+        serviceArea: String(form.serviceArea || '').trim(),
+        serviceLatitude: form.serviceLatitude,
+        serviceLongitude: form.serviceLongitude,
+        experience: EXPERIENCE_OPTIONS[experienceIdx],
+      },
+    });
+  };
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.select({ ios: 'padding', android: undefined })}>
+        <View style={styles.header}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.iconBtn}>
+            <MaterialIcons name="arrow-back" size={22} color="#366855" />
+          </Pressable>
+          <Text style={styles.headerTitle}>Partner Registration</Text>
+          <Text style={styles.brand}>ATELIER</Text>
+        </View>
+
+        <View style={styles.progressRow}>
+          <View style={[styles.progressBar, styles.progressBarActive]} />
+          <View style={styles.progressBar} />
+          <View style={styles.progressBar} />
+          <View style={styles.progressBar} />
+        </View>
+        <Text style={styles.progressText}>Step 1 of 4: Profile Details</Text>
+
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.hero}>
+            <Image
+              source={{
+                uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAtom8K1XoEqJ0MDud8da1vtuzJ6XlqOC8Uz9d9VwDWjSRixUbfIufjQNF250H6zRUizYeMrKNBUNq12UqFmtJ0Oeb1VCr_KGXGwa6fpC84AQ2yUGQgypDhmZGWUoYkCf2B3pGSFFVR-zUuW3jlspI3EvAAYi-Q80gPT3Rtol9BbNsngdAWNslrEy2KXbvx0Vqwu4syOGjuFV6yqbeypAlt0pd0EYQZ3DRngk79uK1qU9n_1P7S8oRqitTS1jOX9LlelvHhS__xk-Y',
+              }}
+              style={styles.heroImage}
+            />
+            <View style={styles.heroOverlay}>
+              <Text style={styles.heroTitle}>Welcome to the Elite Circle.</Text>
+              <Text style={styles.heroSub}>Let's set up your professional digital atelier.</Text>
+            </View>
+          </View>
+
+          <Text style={styles.mainTitle}>Personal & Business Details</Text>
+          <Text style={styles.sub}>Tell us about your craft and where you operate.</Text>
+
+          <Field label="Full Name" value={form.fullName} onChangeText={(v) => update('fullName', v)} placeholder="e.g. Alexander Sterling" />
+
+          <View style={styles.fieldWrap}>
+            <Text style={styles.label}>Phone Number</Text>
+            <View style={styles.phoneRow}>
+              <View style={styles.phoneInputWrap}>
+                <TextInput
+                  value={cleanMobile}
+                  onChangeText={(v) => update('mobile', v.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="+1 (555) 000-0000"
+                  keyboardType="phone-pad"
+                  placeholderTextColor="#9aa6a1"
+                  style={styles.input}
+                />
+              </View>
+              <Pressable style={styles.verifyBtnInline} onPress={onVerifyOtp} disabled={sendingOtp}>
+                <Text style={styles.verifyBtnInlineText}>{sendingOtp ? 'Sending...' : otpSentText}</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.gridWrap}>
+            <View style={styles.gridItem}>
+              <Text style={styles.label}>Service Area</Text>
+              <TextInput
+                value={form.serviceArea}
+                onChangeText={setServiceAreaText}
+                placeholder="City / Area (manual or live)"
+                placeholderTextColor="#707974"
+                style={styles.input}
+              />
+              <Pressable style={styles.liveBtn} onPress={detectLiveLocation} disabled={locating}>
+                <MaterialIcons name="my-location" size={14} color="#1c4f3e" />
+                <Text style={styles.liveBtnText}>{locating ? 'Detecting...' : 'Use Live Location'}</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.gridItem}>
+              <Text style={styles.label}>Years of Experience</Text>
+              <Pressable
+                style={styles.selectBox}
+                onPress={() => {
+                  const next = (experienceIdx + 1) % EXPERIENCE_OPTIONS.length;
+                  setExperienceIdx(next);
+                  update('experience', EXPERIENCE_OPTIONS[next]);
+                }}
+              >
+                <Text style={[styles.selectText, experienceIdx === 0 && styles.placeholder]}>{EXPERIENCE_OPTIONS[experienceIdx]}</Text>
+                <MaterialIcons name="star" size={16} color="#707974" />
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.infoBox}>
+            <MaterialIcons name="verified-user" size={20} color="#366855" />
+            <Text style={styles.infoText}>
+              By continuing, you agree to our Partner Terms and acknowledge that we verify professional credentials for quality assurance.
+            </Text>
+          </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <Pressable style={styles.helpBtn}>
+            <MaterialIcons name="help-outline" size={20} color="#366855" />
+          </Pressable>
+          <Pressable style={styles.continueBtn} onPress={goNext}>
+            <Text style={styles.continueText}>Continue</Text>
+            <MaterialIcons name="arrow-forward" size={18} color="#fff" />
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+function Field({ label, value, onChangeText, placeholder, keyboardType = 'default', autoCapitalize = 'sentences' }) {
   return (
     <View style={styles.fieldWrap}>
       <Text style={styles.label}>{label}</Text>
@@ -57,633 +274,118 @@ function Field({ label, value, onChangeText, placeholder, keyboardType = 'defaul
         placeholder={placeholder}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
-        secureTextEntry={Boolean(secureTextEntry)}
+        placeholderTextColor="#9aa6a1"
         style={styles.input}
-        placeholderTextColor="#8b9692"
-        editable={editable}
       />
     </View>
   );
 }
 
-export default function PartnerProfileSetupScreen({ navigation, route }) {
-  const { user, submitPartnerApplication } = useAuth();
-  const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const compact = width < 360;
-  const otpAlreadyVerified = Boolean(route?.params?.otpVerified);
-  const [stepIndex, setStepIndex] = useState(otpAlreadyVerified ? 1 : 0);
-  const [form, setForm] = useState(initialForm);
-  const otpRefs = useRef([]);
-  const [locating, setLocating] = useState(false);
-  const prefillMobile = String(route?.params?.mobile || '').replace(/\D/g, '').slice(0, 10);
-
-  const progressText = useMemo(() => {
-    const shownSteps = otpAlreadyVerified ? ONBOARDING_STEPS.length - 1 : ONBOARDING_STEPS.length;
-    const shownIndex = otpAlreadyVerified ? stepIndex : stepIndex + 1;
-    return `Step ${shownIndex} of ${shownSteps}`;
-  }, [stepIndex, otpAlreadyVerified]);
-  const currentStep = ONBOARDING_STEPS[stepIndex];
-  const sidePadding = clamp(width * 0.06, 14, 24);
-  const otpFilledCount = (form.otp || '').length;
-
-  const updateForm = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
-  const extractFileName = (uri = '') => {
-    if (!uri) return '';
-    const chunks = uri.split('/');
-    return chunks[chunks.length - 1] || 'uploaded-file';
-  };
-
-  const pickDocument = async (key, label) => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission Needed', 'Please allow gallery access to upload documents.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      updateForm(key, result.assets[0].uri);
-      Alert.alert('Uploaded', `${label} uploaded successfully.`);
-    }
-  };
-
-  const handleOtpChange = (index, value) => {
-    const digit = value.replace(/[^0-9]/g, '').slice(-1);
-    const current = (form.otp || '').padEnd(4, ' ').split('');
-    current[index] = digit || '';
-    const nextOtp = current.join('').replace(/\s/g, '');
-    updateForm('otp', nextOtp);
-    if (digit && index < 3) otpRefs.current[index + 1]?.focus();
-  };
-
-  const handleOtpKeyPress = (index, key) => {
-    if (key === 'Backspace' && !(form.otp || '')[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const detectCurrentLocation = async () => {
-    setLocating(true);
-    try {
-      if (!navigator?.geolocation?.getCurrentPosition) {
-        Alert.alert('Not Supported', 'Geolocation is not supported on this device.');
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = String(position?.coords?.latitude || '');
-          const lng = String(position?.coords?.longitude || '');
-          updateForm('latitude', lat);
-          updateForm('longitude', lng);
-          try {
-            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-            const response = await fetch(url, {
-              headers: {
-                Accept: 'application/json',
-              },
-            });
-            const data = await response.json();
-            const address = data?.address || {};
-            const areaName =
-              address.suburb ||
-              address.neighbourhood ||
-              address.city_district ||
-              address.road ||
-              '';
-            const cityName =
-              address.city ||
-              address.town ||
-              address.village ||
-              address.county ||
-              '';
-            updateForm('area', areaName);
-            updateForm('city', cityName);
-          } catch (err) {
-            // Keep lat/long saved even if reverse geocoding fails.
-            updateForm('area', '');
-            updateForm('city', '');
-          }
-          setLocating(false);
-        },
-        () => {
-          setLocating(false);
-          Alert.alert('Permission Needed', 'Please allow location access for auto location.');
-        },
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
-      );
-      return;
-    } catch (error) {
-      Alert.alert('Location Error', 'Current location fetch nahi ho paayi. Please try again.');
-      setLocating(false);
-      return;
-    }
-  };
-
-  useEffect(() => {
-    if (currentStep.key === 'location' && (!form.latitude || !form.longitude)) {
-      detectCurrentLocation();
-    }
-  }, [currentStep.key]);
-
-  useEffect(() => {
-    if (prefillMobile) {
-      updateForm('mobile', prefillMobile);
-    }
-  }, [prefillMobile]);
-
-  const toggleService = (item) => {
-    setForm((prev) => {
-      const exists = prev.skills.includes(item);
-      return {
-        ...prev,
-        skills: exists ? prev.skills.filter((s) => s !== item) : [...prev.skills, item],
-      };
-    });
-  };
-
-  const validateStep = () => {
-    if (currentStep.key === 'basic') {
-      if (form.mobile.trim().length < 10) return 'Valid mobile number dalo.';
-      if (form.otp.trim().length !== 4) return '4 digit OTP verify karo.';
-    }
-
-    if (currentStep.key === 'personal') {
-      if (!form.fullName.trim()) return 'Full name required hai.';
-      if (!form.address.trim()) return 'Address required hai.';
-      if (!form.age.trim()) return 'Age required hai.';
-      if (!form.experience.trim()) return 'Experience years dalo.';
-      if (String(form.password || '').length < 6) return 'Password kam se kam 6 characters ka ho.';
-      if (form.password !== form.confirmPassword) return 'Password aur confirm password match nahi kar rahe.';
-    }
-
-    if (currentStep.key === 'documents') {
-      if (!form.aadhaar.trim()) return 'Aadhaar upload/number required hai.';
-      if (!form.pan.trim()) return 'PAN upload/number required hai.';
-      if (!form.selfPhoto.trim()) return 'Self photo required hai.';
-    }
-
-    if (currentStep.key === 'services') {
-      if (!form.gender.trim()) return 'Gender select karo.';
-      if (!form.skills.length) return 'Service select karo.';
-    }
-
-    if (currentStep.key === 'location') {
-      const hasDetectedCoordinates = Boolean(form.latitude.trim() && form.longitude.trim());
-      const hasDetectedAddress = Boolean(form.area.trim() || form.city.trim());
-      if (!hasDetectedCoordinates && !hasDetectedAddress) {
-        return 'Pehle current location detect karo.';
-      }
-    }
-
-    if (currentStep.key === 'bank') {
-      if (!form.accountHolder.trim()) return 'Account holder name required hai.';
-      if (!form.accountNumber.trim()) return 'Account number required hai.';
-      if (!form.ifsc.trim()) return 'IFSC code required hai.';
-    }
-
-    if (currentStep.key === 'training' && !form.agreed) return 'Please accept the Partner Terms & Conditions to continue.';
-
-    return '';
-  };
-
-  const goNext = async () => {
-    const error = validateStep();
-    if (error) return Alert.alert('Required', error);
-    if (stepIndex < ONBOARDING_STEPS.length - 1) {
-      setStepIndex((prev) => prev + 1);
-      return;
-    }
-
-    const emailMerged = String(form.email || user?.email || '').trim();
-    const { syncError } = await submitPartnerApplication({
-      ...form,
-      email: emailMerged,
-      flowStatus: 'pending',
-      verificationStatus: 'verification_pending',
-      reviewStatus: 'pending',
-    });
-    if (syncError) {
-      Alert.alert(
-        'Saved offline',
-        `Your details are saved on this device, but the server could not be reached (${syncError}). Try again when online.`
-      );
-    } else {
-      Alert.alert('Application Submitted', 'Your application was sent. Admin will review and activate your account.');
-    }
-    navigation.navigate('PartnerVerification');
-  };
-
-  const goBack = () => {
-    if (stepIndex === 0 || (otpAlreadyVerified && stepIndex === 1)) {
-      navigation.goBack();
-      return;
-    }
-    setStepIndex((prev) => prev - 1);
-  };
-
-  return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.select({ ios: 'padding', android: undefined })}>
-        <View style={styles.header}>
-          <Pressable onPress={goBack} style={styles.iconBtn}>
-            <MaterialIcons name="arrow-back" size={22} color="#366855" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Join as Partner</Text>
-          <View style={styles.iconBtn} />
-        </View>
-
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingHorizontal: sidePadding, paddingBottom: insets.bottom + 20 }]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.stepText}>{progressText}</Text>
-          <Text style={[styles.mainTitle, compact && styles.mainTitleCompact]}>{currentStep.title}</Text>
-          <Text style={styles.sub}>
-            Partner dashboard opens after onboarding is complete and an admin sets your status to active (approved → active).
-          </Text>
-
-          <View style={styles.flowCard}>
-            <Text style={styles.flowTitle}>Status Flow</Text>
-            <Text style={styles.flowLine}>pending → verification_pending → approved → active</Text>
-          </View>
-
-        {currentStep.key === 'basic' ? (
-          <View style={styles.authCard}>
-            <Text style={styles.authTitle}>Welcome back</Text>
-            <Text style={styles.authSub}>Enter your credentials to access your professional dashboard.</Text>
-
-            <View style={styles.fieldWrap}>
-              <Text style={styles.label}>Mobile Number</Text>
-              <View style={styles.mobileRow}>
-                <Text style={styles.countryCode}>+91</Text>
-                <TextInput
-                  value={form.mobile}
-                  onChangeText={(v) => updateForm('mobile', v.replace(/[^0-9]/g, '').slice(0, 10))}
-                  placeholder="10 digit number"
-                  keyboardType="phone-pad"
-                  style={styles.mobileInput}
-                  placeholderTextColor="#8A9792"
-                  maxLength={10}
-                />
-                <MaterialIcons name="smartphone" size={19} color="#707974" />
-              </View>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${Math.max(20, (form.mobile.length / 10) * 100)}%` }]} />
-              </View>
-            </View>
-
-            <View style={styles.fieldWrap}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Verification Code</Text>
-                <Text style={styles.resendText}>Resend</Text>
-              </View>
-              <View style={styles.otpRow}>
-                {[0, 1, 2, 3].map((index) => (
-                  <TextInput
-                    key={`partner-otp-${index}`}
-                    ref={(ref) => {
-                      otpRefs.current[index] = ref;
-                    }}
-                    value={(form.otp || '')[index] || ''}
-                    onChangeText={(value) => handleOtpChange(index, value)}
-                    onKeyPress={({ nativeEvent }) => handleOtpKeyPress(index, nativeEvent.key)}
-                    keyboardType="number-pad"
-                    maxLength={1}
-                    style={styles.otpInput}
-                    textAlign="center"
-                  />
-                ))}
-              </View>
-              <Text style={styles.otpHint}>{otpFilledCount}/4 digits entered</Text>
-            </View>
-          </View>
-        ) : null}
-
-        {currentStep.key === 'personal' ? (
-          <View>
-            <Field label="Full Name" value={form.fullName} onChangeText={(v) => updateForm('fullName', v)} placeholder="Full legal name" />
-            <Field
-              label="Email"
-              value={form.email}
-              onChangeText={(v) => updateForm('email', v)}
-              placeholder={user?.email ? `Default: ${user.email}` : 'name@example.com'}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <Field label="Address" value={form.address} onChangeText={(v) => updateForm('address', v)} placeholder="Complete address" />
-            <Field label="Age" value={form.age} onChangeText={(v) => updateForm('age', v.replace(/[^0-9]/g, '').slice(0, 2))} placeholder="Age" keyboardType="number-pad" />
-            <Field label="Experience (Years)" value={form.experience} onChangeText={(v) => updateForm('experience', v.replace(/[^0-9]/g, '').slice(0, 2))} placeholder="e.g. 5" keyboardType="number-pad" />
-            <Field
-              label="Password"
-              value={form.password}
-              onChangeText={(v) => updateForm('password', v)}
-              placeholder="Min. 6 characters (login after approval)"
-              secureTextEntry
-              autoCapitalize="none"
-            />
-            <Field
-              label="Confirm password"
-              value={form.confirmPassword}
-              onChangeText={(v) => updateForm('confirmPassword', v)}
-              placeholder="Repeat password"
-              secureTextEntry
-              autoCapitalize="none"
-            />
-          </View>
-        ) : null}
-
-        {currentStep.key === 'documents' ? (
-          <View>
-            {[
-              { key: 'aadhaar', label: 'Aadhaar Card', required: true },
-              { key: 'pan', label: 'PAN Card', required: true },
-              { key: 'selfPhoto', label: 'Self Photo', required: true },
-              { key: 'certificates', label: 'Work Certificates', required: false },
-            ].map((item) => {
-              const value = form[item.key];
-              const uploaded = Boolean(value);
-              return (
-                <View key={item.key} style={styles.uploadItemWrap}>
-                  <Text style={styles.label}>{item.required ? item.label : `${item.label} (Optional)`}</Text>
-                  <Pressable onPress={() => pickDocument(item.key, item.label)} style={[styles.uploadBtn, uploaded && styles.uploadBtnDone]}>
-                    <View style={styles.uploadLeft}>
-                      <MaterialIcons name={uploaded ? 'check-circle' : 'cloud-upload'} size={18} color={uploaded ? '#366855' : '#5f6b66'} />
-                      <Text style={[styles.uploadBtnText, uploaded && styles.uploadBtnTextDone]}>
-                        {uploaded ? 'Uploaded' : 'Click to Upload'}
-                      </Text>
-                    </View>
-                    <MaterialIcons name="chevron-right" size={18} color="#7a8681" />
-                  </Pressable>
-                  {uploaded ? <Text style={styles.uploadFileText}>{extractFileName(value)}</Text> : null}
-                </View>
-              );
-            })}
-            <Text style={styles.hint}>Backend note: documents store in S3/Cloudinary with status `verification_pending`.</Text>
-          </View>
-        ) : null}
-
-        {currentStep.key === 'services' ? (
-          <View>
-            <Text style={styles.label}>Gender</Text>
-            <View style={styles.row}>
-              {GENDER_OPTIONS.map((item) => (
-                <Pressable key={item} onPress={() => updateForm('gender', item)} style={[styles.chip, form.gender === item && styles.chipActive]}>
-                  <Text style={[styles.chipText, form.gender === item && styles.chipTextActive]}>{item}</Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={styles.label}>Select Services</Text>
-            <View style={styles.row}>
-              {SERVICE_OPTIONS.map((item) => {
-                const selected = form.skills.includes(item);
-                return (
-                  <Pressable key={item} onPress={() => toggleService(item)} style={[styles.chip, selected && styles.chipActive]}>
-                    <Text style={[styles.chipText, selected && styles.chipTextActive]}>{item}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Text style={styles.hint}>Pricing admin side se manage hogi.</Text>
-          </View>
-        ) : null}
-
-        {currentStep.key === 'location' ? (
-          <View>
-            <Text style={styles.hint}>Aapki current location automatically detect hogi.</Text>
-            <Field label="Area" value={form.area} onChangeText={(v) => updateForm('area', v)} placeholder="Auto detected area" editable={false} />
-            <Field label="City" value={form.city} onChangeText={(v) => updateForm('city', v)} placeholder="Auto detected city" editable={false} />
-            <Pressable onPress={detectCurrentLocation} style={styles.secondaryBtn}>
-              <Text style={styles.secondaryBtnText}>{locating ? 'Detecting...' : 'Use Current Location'}</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {currentStep.key === 'bank' ? (
-          <View>
-            <Field label="Account Holder Name" value={form.accountHolder} onChangeText={(v) => updateForm('accountHolder', v)} placeholder="As per bank" />
-            <Field label="Account Number" value={form.accountNumber} onChangeText={(v) => updateForm('accountNumber', v.replace(/[^0-9]/g, '').slice(0, 18))} placeholder="Bank account number" keyboardType="number-pad" />
-            <Field label="IFSC Code" value={form.ifsc} onChangeText={(v) => updateForm('ifsc', v.toUpperCase())} placeholder="SBIN0001234" />
-            <Field label="UPI ID (Optional)" value={form.upi} onChangeText={(v) => updateForm('upi', v)} placeholder="name@upi" />
-            <Text style={styles.hint}>Payout setup: Razorpay Route ya Stripe Connect use karo.</Text>
-          </View>
-        ) : null}
-
-        {currentStep.key === 'training' ? (
-          <View>
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoTitle}>Partner Terms & Conditions</Text>
-              <Text style={styles.termsIntro}>
-                By submitting, you agree to the following in brief:
-              </Text>
-              <Text style={styles.infoText}>
-                • You are an independent provider; your details must be truthful.{'\n'}
-                • Access is granted after verification and admin activation.{'\n'}
-                • Use the platform lawfully: no fraud, abuse, or misuse of customer data.{'\n'}
-                • Deliver services professionally; follow cancellation and payout rules. You handle your own taxes.{'\n'}
-                • We may update these terms or restrict access for legal or operational reasons.
-              </Text>
-            </View>
-            <Pressable onPress={() => updateForm('agreed', !form.agreed)} style={styles.checkboxRow}>
-              <View style={[styles.checkbox, form.agreed && styles.checkboxChecked]}>
-                {form.agreed ? <MaterialIcons name="check" size={14} color="#FFFFFF" /> : null}
-              </View>
-              <Text style={styles.checkboxText}>I agree to the Partner Terms & Conditions</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-          <View style={[styles.footerRow, compact && styles.footerRowCompact]}>
-            <Pressable onPress={goBack} style={styles.secondaryBtn}>
-              <Text style={styles.secondaryBtnText}>{stepIndex === 0 ? 'Cancel' : 'Previous'}</Text>
-            </Pressable>
-            <Pressable onPress={goNext} style={styles.primaryBtn}>
-              <Text style={styles.primaryBtnText}>{stepIndex === ONBOARDING_STEPS.length - 1 ? 'Submit' : 'Continue'}</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
-}
-
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f0fcfa' },
+  safe: { flex: 1, backgroundColor: '#f0fcfa' },
   flex: { flex: 1 },
-  header: {
-    height: 60,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderColor: 'rgba(192,201,195,0.35)',
-  },
-  iconBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#313c3b', fontSize: fontScale(18), fontWeight: '800' },
-  content: { paddingTop: 16, paddingBottom: 24 },
-  stepText: { color: '#366855', fontWeight: '700', fontSize: fontScale(11), letterSpacing: 1.1, textTransform: 'uppercase' },
-  mainTitle: { color: '#1f2a27', fontSize: fontScale(29), fontWeight: '800', marginTop: 8 },
-  mainTitleCompact: { fontSize: fontScale(24), lineHeight: 31 },
-  sub: { color: '#4c5753', marginTop: 8, marginBottom: 14, fontSize: fontScale(13), lineHeight: 18 },
-  flowCard: {
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(182,235,211,0.45)',
-    borderWidth: 1,
-    borderColor: 'rgba(54,104,85,0.18)',
-    marginBottom: 12,
-  },
-  flowTitle: { color: '#366855', fontWeight: '700', marginBottom: 4, fontSize: fontScale(12) },
-  flowLine: { color: '#2c3a35', fontSize: fontScale(12), lineHeight: 18, flexShrink: 1 },
-  authCard: {
-    borderRadius: 24,
-    padding: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(192,201,195,0.35)',
-    marginBottom: 6,
-  },
-  authTitle: { color: '#1f2a27', fontSize: fontScale(24), fontWeight: '800' },
-  authSub: { color: '#4f5a56', marginTop: 6, marginBottom: 14, fontSize: fontScale(13), lineHeight: 19 },
+  header: { height: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
+  iconBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: '#366855', fontWeight: '800', fontSize: 16 },
+  brand: { color: '#285A48', fontWeight: '900', fontSize: 13 },
+  progressRow: { flexDirection: 'row', gap: 5, paddingHorizontal: 24 },
+  progressBar: { flex: 1, height: 4, borderRadius: 999, backgroundColor: '#d9e5e3' },
+  progressBarActive: { backgroundColor: '#366855' },
+  progressText: { marginTop: 8, marginLeft: 24, color: '#366855', fontSize: 10, fontWeight: '800', letterSpacing: 1.1, textTransform: 'uppercase' },
+  content: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 110 },
+  hero: { height: 190, borderRadius: 28, overflow: 'hidden', marginBottom: 24, backgroundColor: '#c4d4cf' },
+  heroImage: { width: '100%', height: '100%', position: 'absolute' },
+  heroOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 18, paddingVertical: 18, backgroundColor: 'rgba(19,30,28,0.45)' },
+  heroTitle: { color: '#f0fcfa', fontWeight: '800', fontSize: 23 },
+  heroSub: { color: '#d9e5e3', marginTop: 2, fontSize: 13 },
+  mainTitle: { color: '#313c3b', fontWeight: '800', fontSize: 22 },
+  sub: { color: '#5f6b66', marginTop: 5, marginBottom: 14 },
   fieldWrap: { marginBottom: 12 },
-  label: {
-    color: '#366855',
-    fontSize: fontScale(10),
-    letterSpacing: 1.2,
-    fontWeight: '700',
-    marginBottom: 6,
-    marginLeft: 4,
-    textTransform: 'uppercase',
-  },
+  label: { color: '#366855', fontSize: 11, fontWeight: '700', marginBottom: 7, letterSpacing: 0.6, textTransform: 'uppercase' },
   input: {
-    minHeight: 52,
+    minHeight: 50,
+    borderRadius: 13,
+    backgroundColor: '#deebe8',
+    paddingHorizontal: 14,
+    color: '#313c3b',
+    fontSize: 15,
+    borderWidth: 0,
+    outlineWidth: 0,
+  },
+  phoneRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  phoneInputWrap: { flex: 1 },
+  verifyBtnInline: {
+    minHeight: 50,
     borderRadius: 12,
-    backgroundColor: '#deebe8',
-    paddingHorizontal: 12,
-    color: '#313c3b',
-    fontSize: fontScale(14),
-    borderWidth: 0,
-    outlineWidth: 0,
-    outlineColor: 'transparent',
-  },
-  mobileRow: {
-    minHeight: 52,
-    borderRadius: 12,
-    backgroundColor: '#deebe8',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-  },
-  countryCode: { color: '#366855', fontWeight: '700', marginRight: 8, fontSize: fontScale(14) },
-  mobileInput: {
-    flex: 1,
-    color: '#313c3b',
-    fontSize: fontScale(15),
-    borderWidth: 0,
-    outlineWidth: 0,
-    outlineColor: 'transparent',
-  },
-  progressTrack: { height: 3, backgroundColor: '#e4f0ee', borderRadius: 999, overflow: 'hidden', marginTop: 8 },
-  progressFill: { height: '100%', backgroundColor: '#366855', borderRadius: 999 },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  resendText: { color: '#366855', fontWeight: '700', fontSize: fontScale(11), letterSpacing: 0.8 },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  otpRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginBottom: 12 },
-  otpInput: {
-    flex: 1,
-    maxWidth: 56,
-    minWidth: 42,
-    height: 42,
-    borderRadius: 10,
-    backgroundColor: '#deebe8',
-    color: '#313c3b',
-    fontSize: fontScale(17),
-    fontWeight: '700',
-    borderWidth: 0,
-    outlineWidth: 0,
-    outlineColor: 'transparent',
-  },
-  otpHint: { color: '#6d7873', fontSize: fontScale(11), marginTop: -4 },
-  chip: {
-    minHeight: 36,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(112,121,116,0.35)',
+    backgroundColor: '#b6ebd3',
+    paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
   },
-  chipActive: {
-    backgroundColor: '#366855',
-    borderColor: '#366855',
-  },
-  chipText: { color: '#4f5a56', fontWeight: '600', fontSize: fontScale(12) },
-  chipTextActive: { color: '#FFFFFF' },
-  hint: { color: '#5f6b66', fontSize: fontScale(11), marginBottom: 8 },
-  uploadItemWrap: { marginBottom: 10 },
-  uploadBtn: {
-    minHeight: 52,
-    borderRadius: 12,
+  verifyBtnInlineText: { color: '#1c4f3e', fontWeight: '800', fontSize: 12 },
+  gridWrap: { flexDirection: 'row', gap: 10, marginBottom: 6 },
+  gridItem: { flex: 1 },
+  selectBox: {
+    minHeight: 50,
+    borderRadius: 13,
     backgroundColor: '#deebe8',
-    borderWidth: 1,
-    borderColor: 'rgba(192,201,195,0.4)',
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  uploadBtnDone: {
-    borderColor: 'rgba(54,104,85,0.35)',
-    backgroundColor: 'rgba(182,235,211,0.35)',
-  },
-  uploadLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  uploadBtnText: { color: '#5f6b66', fontSize: fontScale(13), fontWeight: '600' },
-  uploadBtnTextDone: { color: '#366855' },
-  uploadFileText: { marginTop: 4, marginLeft: 4, color: '#5f6b66', fontSize: fontScale(10) },
-  infoBlock: { backgroundColor: '#deebe8', borderRadius: 12, padding: 12, marginBottom: 12 },
-  infoTitle: { color: '#1f2a27', fontWeight: '700', marginBottom: 8, fontSize: fontScale(15) },
-  termsIntro: { color: '#4f5a56', lineHeight: 20, fontSize: fontScale(12), marginBottom: 6 },
-  infoText: { color: '#4f5a56', lineHeight: 20, fontSize: fontScale(12) },
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(112,121,116,0.5)',
+  selectText: { color: '#313c3b', fontSize: 13, fontWeight: '600', flex: 1, paddingRight: 8 },
+  placeholder: { color: '#707974', fontWeight: '500' },
+  liveBtn: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    minHeight: 30,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    backgroundColor: '#b6ebd3',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    gap: 6,
   },
-  checkboxChecked: { backgroundColor: '#366855', borderColor: '#366855' },
-  checkboxText: { color: '#313c3b', fontWeight: '600', flex: 1, flexShrink: 1 },
-  footerRow: { marginTop: 8, flexDirection: 'row', gap: 10 },
-  footerRowCompact: { flexDirection: 'column' },
-  secondaryBtn: {
-    flex: 1,
-    minHeight: 52,
-    borderRadius: 12,
+  liveBtnText: { color: '#1c4f3e', fontSize: 11, fontWeight: '700' },
+  infoBox: {
+    marginTop: 6,
+    backgroundColor: '#eaf6f4',
     borderWidth: 1,
-    borderColor: 'rgba(112,121,116,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(192,201,195,0.45)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
   },
-  primaryBtn: {
+  infoText: { flex: 1, color: '#404944', lineHeight: 18, fontSize: 12 },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 92,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 22,
+  },
+  helpBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f8f7' },
+  continueBtn: {
     flex: 1,
-    minHeight: 52,
-    borderRadius: 12,
+    marginLeft: 12,
+    height: 50,
+    borderRadius: 14,
     backgroundColor: '#366855',
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
-  secondaryBtnText: { color: '#4f5a56', fontWeight: '700' },
-  primaryBtnText: { color: '#FFFFFF', fontWeight: '700' },
+  continueText: { color: '#fff', fontWeight: '800', fontSize: 15 },
 });

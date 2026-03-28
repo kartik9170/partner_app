@@ -48,7 +48,7 @@ export default function PartnerSupportDetailsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f0fcfa' },
+  safeArea: { flex: 1, backgroundColor: '#EDE0D4' },
   header: {
     height: 60,
     paddingHorizontal: 12,
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#313c3b', fontSize: fontScale(18), fontWeight: '800' },
+  headerTitle: { color: '#1E1E1E', fontSize: fontScale(18), fontWeight: '800' },
   content: { padding: 16 },
   title: { color: '#1f2a27', fontSize: fontScale(26), fontWeight: '800' },
   sub: { color: '#4f5a56', fontSize: fontScale(13), lineHeight: 20, marginTop: 6, marginBottom: 14 },

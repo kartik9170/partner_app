@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import useBooking from '../../hooks/useBooking';
+import { P } from '../../theme/partnerTokens';
 import { BOOKING_STATUS } from '../../utils/constants';
 import { fontScale } from '../../utils/responsive';
 
@@ -55,6 +57,11 @@ export default function BookingRequestDetailScreen({ navigation, route }) {
     Alert.alert('Declined', 'Booking request declined.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
   };
 
+  const amountDisplay =
+    typeof details.amount === 'number'
+      ? `₹${details.amount.toLocaleString('en-IN')}`
+      : `₹${details.amount}`;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
@@ -75,71 +82,81 @@ export default function BookingRequestDetailScreen({ navigation, route }) {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.alertPill}>
-          <MaterialIcons name="notifications-active" size={18} color="#93000a" />
-          <Text style={styles.alertPillText}>URGENT REQUEST</Text>
-        </View>
-        <Text style={styles.mainTitle}>New Booking Request!</Text>
-        <Text style={styles.mainSub}>
-          Respond within <Text style={styles.timerText}>{formatCountdown(countdown)}</Text> minutes
-        </Text>
+      <View style={styles.mainFill}>
+        <LinearGradient
+          colors={[P.surfaceContainerLow, P.surface, P.surfaceDim]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.alertPill}>
+            <MaterialIcons name="notifications-active" size={18} color={P.onErrorContainer} />
+            <Text style={styles.alertPillText}>URGENT REQUEST</Text>
+          </View>
+          <Text style={styles.mainTitle}>New Booking Request!</Text>
+          <Text style={styles.mainSub}>
+            Respond within <Text style={styles.timerText}>{formatCountdown(countdown)}</Text>
+          </Text>
 
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>SERVICE REQUESTED</Text>
-          <Text style={styles.cardTitle}>{details.serviceName}</Text>
-          <View style={styles.twoCol}>
-            <View style={styles.metricBox}>
-              <MaterialIcons name="schedule" size={20} color="#366855" />
-              <View>
-                <Text style={styles.metricLabel}>DURATION</Text>
-                <Text style={styles.metricValue}>{details.duration}</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>SERVICE REQUESTED</Text>
+            <Text style={styles.cardTitle}>{details.serviceName}</Text>
+            <View style={styles.twoCol}>
+              <View style={styles.metricBox}>
+                <MaterialIcons name="schedule" size={20} color={P.secondary} />
+                <View>
+                  <Text style={styles.metricLabel}>DURATION</Text>
+                  <Text style={styles.metricValue}>{details.duration}</Text>
+                </View>
+              </View>
+              <View style={styles.metricBox}>
+                <MaterialIcons name="near-me" size={20} color={P.secondary} />
+                <View>
+                  <Text style={styles.metricLabel}>DISTANCE</Text>
+                  <Text style={styles.metricValue}>{details.distance}</Text>
+                </View>
               </View>
             </View>
-            <View style={styles.metricBox}>
-              <MaterialIcons name="near-me" size={20} color="#366855" />
-              <View>
-                <Text style={styles.metricLabel}>DISTANCE</Text>
-                <Text style={styles.metricValue}>{details.distance}</Text>
-              </View>
+          </View>
+
+          <View style={styles.earningsCard}>
+            <Text style={styles.earningsLabel}>ESTIMATED EARNINGS</Text>
+            <Text style={styles.earningsValue}>{amountDisplay}</Text>
+            <Text style={styles.earningsSub}>Net payout after platform fees</Text>
+          </View>
+
+          <View style={styles.dateCard}>
+            <Text style={styles.dateCardLabel}>APPOINTMENT TIME</Text>
+            <View style={styles.dateRow}>
+              <MaterialIcons name="calendar-today" size={18} color={P.secondary} />
+              <Text style={styles.dateDay}>{details.date}</Text>
+            </View>
+            <Text style={styles.dateTime}>{details.time}</Text>
+          </View>
+
+          <View style={styles.mapCard}>
+            <Image
+              source={{
+                uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDaW8IOQhtVKTz5SULQcBzOO-m1CmBGlIotLphHRbycECmCt9mwQyo8suu06zVcW3zZYnr3tflyZICWM3Kr2vFM3xrTSlI3x_mnwVHADUBQqPUv4eruEJiSDzThUHoqOrwF7DTpBjkfxBhHk4ZZyPDxiDdqDcgRC1D4NpyZig3lab9DKZJHJQLxvj-VCeYdKXTOVl9cPK5zu26JIEMSg6sgX49MSenICs9H3qYxcKKPvkALnAx6A8h7Dpok2hRUSFVi2_k2CXBpReM',
+              }}
+              style={styles.mapImage}
+            />
+            <View style={styles.mapOverlay} />
+            <View style={styles.locationPill}>
+              <MaterialIcons name="location-on" size={16} color={P.secondary} />
+              <Text style={styles.locationText} numberOfLines={1}>
+                {details.address}
+              </Text>
             </View>
           </View>
-        </View>
-
-        <View style={styles.earningsCard}>
-          <Text style={styles.earningsLabel}>ESTIMATED EARNINGS</Text>
-          <Text style={styles.earningsValue}>INR {details.amount}</Text>
-          <Text style={styles.earningsSub}>Net payout after platform fees</Text>
-        </View>
-
-        <View style={styles.dateCard}>
-          <Text style={styles.metricLabel}>APPOINTMENT TIME</Text>
-          <View style={styles.dateRow}>
-            <MaterialIcons name="calendar-today" size={18} color="#366855" />
-            <Text style={styles.dateDay}>{details.date}</Text>
-          </View>
-          <Text style={styles.dateTime}>{details.time}</Text>
-        </View>
-
-        <View style={styles.mapCard}>
-          <Image
-            source={{
-              uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDaW8IOQhtVKTz5SULQcBzOO-m1CmBGlIotLphHRbycECmCt9mwQyo8suu06zVcW3zZYnr3tflyZICWM3Kr2vFM3xrTSlI3x_mnwVHADUBQqPUv4eruEJiSDzThUHoqOrwF7DTpBjkfxBhHk4ZZyPDxiDdqDcgRC1D4NpyZig3lab9DKZJHJQLxvj-VCeYdKXTOVl9cPK5zu26JIEMSg6sgX49MSenICs9H3qYxcKKPvkALnAx6A8h7Dpok2hRUSFVi2_k2CXBpReM',
-            }}
-            style={styles.mapImage}
-          />
-          <View style={styles.mapOverlay} />
-          <View style={styles.locationPill}>
-            <MaterialIcons name="location-on" size={16} color="#366855" />
-            <Text style={styles.locationText}>{details.address}</Text>
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       <View style={styles.bottomActions}>
         <Pressable style={({ pressed }) => [styles.acceptBtn, pressed && styles.pressed]} onPress={acceptBooking}>
           <Text style={styles.acceptText}>ACCEPT</Text>
-          <MaterialIcons name="check-circle" size={20} color="#FFFFFF" />
+          <MaterialIcons name="check-circle" size={20} color={P.onSecondary} />
         </Pressable>
         <Pressable style={({ pressed }) => [styles.declineBtn, pressed && styles.pressed]} onPress={declineBooking}>
           <Text style={styles.declineText}>DECLINE REQUEST</Text>
@@ -150,85 +167,190 @@ export default function BookingRequestDetailScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f0fcfa' },
+  safeArea: { flex: 1, backgroundColor: P.background },
   topBar: {
     height: 64,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(240,252,250,0.85)',
+    backgroundColor: 'rgba(236, 253, 245, 0.82)',
   },
-  topLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  profileWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#d9e5e3', overflow: 'hidden' },
+  topLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  profileWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: P.primaryContainer,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   profileImg: { width: '100%', height: '100%' },
-  topBrand: { color: '#16311f', fontSize: fontScale(19), fontWeight: '700' },
-  onlineWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#366855' },
-  onlineText: { color: '#1f4b34', fontSize: fontScale(11), fontWeight: '800' },
-  content: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 170 },
-  alertPill: { alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#ffdad6', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 12 },
-  alertPillText: { color: '#93000a', fontSize: fontScale(11), fontWeight: '800', letterSpacing: 1 },
-  mainTitle: { textAlign: 'center', color: '#273331', fontSize: fontScale(34), fontWeight: '800' },
-  mainSub: { textAlign: 'center', color: '#5f6b66', marginTop: 4, marginBottom: 12, fontSize: fontScale(16) },
-  timerText: { color: '#ba1a1a', fontWeight: '800', fontSize: fontScale(20) },
-  card: { borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#deebe8', padding: 16, marginBottom: 12 },
-  cardLabel: { color: '#76827d', fontSize: fontScale(10), fontWeight: '700', letterSpacing: 1.2, marginBottom: 4 },
-  cardTitle: { color: '#313c3b', fontSize: fontScale(27), fontWeight: '700', lineHeight: 33, marginBottom: 12 },
-  twoCol: { flexDirection: 'row', gap: 10 },
-  metricBox: { flex: 1, borderRadius: 12, backgroundColor: 'rgba(228,240,238,0.6)', borderWidth: 1, borderColor: 'rgba(192,201,195,0.35)', padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  metricLabel: { color: '#6b7772', fontSize: fontScale(10), fontWeight: '700' },
-  metricValue: { color: '#313c3b', fontSize: fontScale(13), fontWeight: '700' },
-  earningsCard: { borderRadius: 16, backgroundColor: '#313c3b', padding: 18, alignItems: 'center', marginBottom: 12 },
-  earningsLabel: { color: '#bdc9c7', fontSize: fontScale(10), fontWeight: '700', letterSpacing: 1.2, marginBottom: 2 },
-  earningsValue: { color: '#FFFFFF', fontSize: fontScale(46), fontWeight: '800', lineHeight: 52 },
-  earningsSub: { color: '#bdc9c7', fontSize: fontScale(11), marginTop: 2 },
-  dateCard: { borderRadius: 16, backgroundColor: '#deebe8', borderWidth: 1, borderColor: 'rgba(192,201,195,0.35)', padding: 16, alignItems: 'center', marginBottom: 12 },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 4 },
-  dateDay: { color: '#313c3b', fontSize: fontScale(24), fontWeight: '700' },
-  dateTime: { color: '#366855', fontSize: fontScale(42), fontWeight: '800', marginTop: 2 },
-  mapCard: { borderRadius: 16, overflow: 'hidden', height: 130, borderWidth: 1, borderColor: 'rgba(192,201,195,0.35)', marginBottom: 8 },
-  mapImage: { width: '100%', height: '100%' },
-  mapOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(49,60,59,0.12)' },
-  locationPill: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    right: 10,
+  topBrand: { color: '#064e3b', fontSize: fontScale(18), fontWeight: '700' },
+  onlineWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: P.secondary },
+  onlineText: { color: '#064e3b', fontSize: fontScale(11), fontWeight: '800', letterSpacing: 0.5 },
+  mainFill: { flex: 1, position: 'relative' },
+  content: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 180 },
+  alertPill: {
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    borderRadius: 10,
-    backgroundColor: 'rgba(240,252,250,0.9)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.55)',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    gap: 8,
+    backgroundColor: P.errorContainer,
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginBottom: 16,
+    shadowColor: P.onSurface,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  locationText: { color: '#313c3b', fontSize: fontScale(12), fontWeight: '700', flex: 1 },
+  alertPillText: { color: P.onErrorContainer, fontSize: fontScale(10), fontWeight: '800', letterSpacing: 2 },
+  mainTitle: { textAlign: 'center', color: P.onSurface, fontSize: fontScale(30), fontWeight: '800' },
+  mainSub: { textAlign: 'center', color: P.onSurfaceVariant, marginTop: 4, marginBottom: 20, fontSize: fontScale(16) },
+  timerText: { color: P.error, fontWeight: '800', fontSize: fontScale(18), fontVariant: ['tabular-nums'] },
+  card: {
+    borderRadius: 16,
+    backgroundColor: P.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: P.surfaceContainerHighest,
+    padding: 24,
+    marginBottom: 16,
+    shadowColor: P.onSurface,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 3,
+  },
+  cardLabel: {
+    color: P.onSurfaceVariant,
+    fontSize: fontScale(10),
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 4,
+    opacity: 0.7,
+  },
+  cardTitle: { color: P.primary, fontSize: fontScale(24), fontWeight: '700', lineHeight: 30, marginBottom: 20 },
+  twoCol: { flexDirection: 'row', gap: 12 },
+  metricBox: {
+    flex: 1,
+    borderRadius: 12,
+    backgroundColor: `${P.surfaceContainer}80`,
+    borderWidth: 1,
+    borderColor: `${P.outlineVariant}4D`,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  metricLabel: { color: P.onSurfaceVariant, fontSize: fontScale(10), fontWeight: '700' },
+  metricValue: { color: P.primary, fontSize: fontScale(13), fontWeight: '700' },
+  earningsCard: {
+    borderRadius: 16,
+    backgroundColor: P.primary,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: P.onSurface,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  earningsLabel: {
+    color: P.primaryFixedDim,
+    fontSize: fontScale(10),
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 8,
+    opacity: 0.85,
+  },
+  earningsValue: { color: P.onPrimary, fontSize: fontScale(44), fontWeight: '800', lineHeight: 48 },
+  earningsSub: { color: P.primaryFixedDim, fontSize: fontScale(11), marginTop: 8, fontWeight: '500' },
+  dateCard: {
+    borderRadius: 16,
+    backgroundColor: P.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: `${P.outlineVariant}33`,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dateCardLabel: {
+    color: P.onSurfaceVariant,
+    fontSize: fontScale(10),
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 8,
+    opacity: 0.7,
+  },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  dateDay: { color: P.primary, fontSize: fontScale(20), fontWeight: '700' },
+  dateTime: { color: P.secondary, fontSize: fontScale(36), fontWeight: '800' },
+  mapCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    height: 128,
+    borderWidth: 1,
+    borderColor: `${P.outlineVariant}4D`,
+    marginBottom: 8,
+  },
+  mapImage: { width: '100%', height: '100%' },
+  mapOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: `${P.primary}1A` },
+  locationPill: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(240, 252, 250, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  locationText: { color: P.primary, fontSize: fontScale(12), fontWeight: '700', flex: 1 },
   bottomActions: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
     borderTopWidth: 1,
-    borderColor: '#deebe8',
-    backgroundColor: 'rgba(240,252,250,0.92)',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 22,
+    borderColor: P.surfaceContainerHighest,
+    backgroundColor: 'rgba(240, 252, 250, 0.92)',
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 28,
   },
   acceptBtn: {
-    minHeight: 58,
+    minHeight: 64,
     borderRadius: 16,
-    backgroundColor: '#366855',
+    backgroundColor: P.secondary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 12,
+    shadowColor: P.secondary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  acceptText: { color: '#FFFFFF', fontSize: fontScale(24), fontWeight: '800' },
-  declineBtn: { minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-  declineText: { color: '#5f6b66', fontSize: fontScale(13), fontWeight: '700', letterSpacing: 1.4 },
-  pressed: { transform: [{ scale: 0.98 }] },
+  acceptText: { color: P.onSecondary, fontSize: fontScale(20), fontWeight: '800' },
+  declineBtn: { minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  declineText: {
+    color: P.onSurfaceVariant,
+    fontSize: fontScale(12),
+    fontWeight: '700',
+    letterSpacing: 2,
+  },
+  pressed: { transform: [{ scale: 0.97 }] },
 });
