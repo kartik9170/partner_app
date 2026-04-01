@@ -5,6 +5,19 @@ import { generateId } from '../utils/helpers';
 
 export const BookingContext = createContext();
 
+async function reverseGeocodeNominatim(latitude, longitude) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'AtelierPartnerApp/1.0',
+    },
+  });
+  if (!res.ok) return '';
+  const data = await res.json().catch(() => ({}));
+  return String(data.display_name || '').trim();
+}
+
 export const BookingProvider = ({ children }) => {
   const [bookings, setBookings] = useState([]);
   const trackingSubsRef = useRef({});
@@ -46,11 +59,7 @@ export const BookingProvider = ({ children }) => {
         const longitude = Number(position?.coords?.longitude || 0);
         let place = '';
         try {
-          const geo = await Location.reverseGeocodeAsync({ latitude, longitude });
-          const g = geo?.[0] || {};
-          place = [g.district || g.street || g.name || '', g.city || g.subregion || '', g.region || '']
-            .filter(Boolean)
-            .join(', ');
+          place = await reverseGeocodeNominatim(latitude, longitude);
         } catch {
           // Keep coordinates even if reverse geocode fails.
         }

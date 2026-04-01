@@ -23,23 +23,6 @@ function looksLikeLatLon(str) {
   return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
 }
 
-function formatExpoAddress(g) {
-  if (!g || typeof g !== 'object') return '';
-  const streetLine = [g.streetNumber, g.street].filter(Boolean).join(' ').trim();
-  const locality = g.district || g.subregion || '';
-  const city = g.city || '';
-  const region = g.region || '';
-  const parts = [];
-  if (streetLine) parts.push(streetLine);
-  else if (g.name && !looksLikeLatLon(g.name)) parts.push(String(g.name).trim());
-  if (locality && !parts.includes(locality)) parts.push(locality);
-  if (city && city !== locality && !parts.includes(city)) parts.push(city);
-  if (region && region !== city && !parts.includes(region)) parts.push(region);
-  if (g.postalCode) parts.push(g.postalCode);
-  if (g.country && !parts.includes(g.country)) parts.push(g.country);
-  return parts.filter(Boolean).join(', ');
-}
-
 async function reverseGeocodeNominatim(latitude, longitude) {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}`;
   const res = await fetch(url, {
@@ -54,14 +37,8 @@ async function reverseGeocodeNominatim(latitude, longitude) {
 }
 
 async function resolveReadableAddress(latitude, longitude) {
-  const geocoded = await Location.reverseGeocodeAsync({ latitude, longitude });
-  const g = geocoded?.[0] || {};
-  let label = formatExpoAddress(g);
-  const weak = !label || label.length < 6 || looksLikeLatLon(label);
-  if (weak) {
-    const nom = await reverseGeocodeNominatim(latitude, longitude);
-    if (nom) label = nom;
-  }
+  const nom = await reverseGeocodeNominatim(latitude, longitude);
+  const label = nom && !looksLikeLatLon(nom) ? nom : '';
   return { label: label && !looksLikeLatLon(label) ? label : '', latitude, longitude };
 }
 

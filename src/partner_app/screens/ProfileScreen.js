@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import useAuth from '../../hooks/useAuth';
 import { P } from '../../theme/partnerTokens';
-import { ROLES } from '../../utils/constants';
 import { fontScale } from '../../utils/responsive';
 
 function InfoRow({ label, value, isLast }) {
@@ -19,7 +18,7 @@ function InfoRow({ label, value, isLast }) {
 }
 
 export default function ProfileScreen({ navigation }) {
-  const { user, role, setRole, logout } = useAuth();
+  const { user, role, logout } = useAuth();
 
   const displayRole = typeof role === 'string' ? role : String(role ?? '—');
 
@@ -69,15 +68,6 @@ export default function ProfileScreen({ navigation }) {
         </Pressable>
 
         <View style={styles.actions}>
-          <Pressable
-            onPress={() => setRole(ROLES.CUSTOMER)}
-            style={({ pressed }) => [styles.switchBtn, pressed && styles.btnPressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Switch to Customer"
-          >
-            <Text style={styles.switchBtnText}>Switch to Customer</Text>
-          </Pressable>
-
           <Pressable
             onPress={logout}
             style={({ pressed }) => [styles.logoutBtn, pressed && styles.btnPressed]}
@@ -182,26 +172,6 @@ const styles = StyleSheet.create({
   actions: {
     marginTop: 20,
     gap: 12,
-  },
-  switchBtn: {
-    minHeight: 54,
-    borderRadius: 14,
-    backgroundColor: P.primaryFixed,
-    borderWidth: 1,
-    borderColor: `${P.secondaryFixedDim}99`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    shadowColor: P.onSurface,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  switchBtnText: {
-    fontSize: fontScale(16),
-    fontWeight: '700',
-    color: P.secondary,
   },
   logoutBtn: {
     minHeight: 54,
