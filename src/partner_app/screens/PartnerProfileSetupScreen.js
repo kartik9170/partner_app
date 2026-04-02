@@ -23,23 +23,13 @@ function looksLikeLatLon(str) {
   return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
 }
 
-async function reverseGeocodeNominatim(latitude, longitude) {
-  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-      'User-Agent': 'AtelierPartnerApp/1.0',
-    },
-  });
-  if (!res.ok) return '';
-  const data = await res.json().catch(() => ({}));
-  return String(data.display_name || '').trim();
-}
-
 async function resolveReadableAddress(latitude, longitude) {
-  const nom = await reverseGeocodeNominatim(latitude, longitude);
-  const label = nom && !looksLikeLatLon(nom) ? nom : '';
-  return { label: label && !looksLikeLatLon(label) ? label : '', latitude, longitude };
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { label: '', latitude, longitude };
+  }
+  return { label: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, latitude: lat, longitude: lng };
 }
 
 const EXPERIENCE_OPTIONS = ['Select Level', '1-3 Years', '3-7 Years', '7-10 Years', '10+ Years (Master)'];
@@ -90,7 +80,7 @@ export default function PartnerProfileSetupScreen({ navigation, route }) {
       if (!label) {
         Alert.alert(
           'Address not found',
-          'Could not turn GPS into a street or area name. Check internet and try again, or type your service area manually. Your exact coordinates are not shown on purpose — clients need a readable place.',
+          'Could not read your coordinates. Try again, or type your service area manually.',
         );
         setForm((p) => ({
           ...p,

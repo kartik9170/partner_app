@@ -14,7 +14,7 @@ export default function ProfileScreen() {
   const sanitizedName = (() => {
     const raw = String(user?.name || '').trim();
     if (!raw) return DEFAULT_PROFILE_NAME;
-    // If backend returns mobile-like values, keep a proper display name.
+    // If auth returns mobile-like values, keep a proper display name.
     if (/^[0-9+\-\s()]+$/.test(raw)) return DEFAULT_PROFILE_NAME;
     return raw;
   })();

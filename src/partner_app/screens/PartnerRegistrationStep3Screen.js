@@ -67,7 +67,7 @@ export default function PartnerRegistrationStep3Screen({ navigation, route }) {
 
     setSubmitting(true);
     try {
-      // Keep Step-3 UI same as provided while still satisfying backend password requirement.
+      // Keep Step-3 UI same while generating a local password for demo auth flow.
       const autoPassword = String(form.password || `Atelier@${String(form.mobile || '0000').slice(-4)}!`);
       const payload = {
         ...form,
